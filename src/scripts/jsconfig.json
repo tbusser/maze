@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"paths": {
+			"./*": ["scripts/*"]
+		},
+		"target": "ES6"
+	},
+	"include": [
+		"**/*.js"
+	]
+}

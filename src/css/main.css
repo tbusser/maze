@@ -1,0 +1,129 @@
+/* ========================================================================== *\
+	#RESET
+\* ========================================================================== */
+*,
+*:after,
+*:before {
+	box-sizing: inherit;
+}
+
+button,
+input {
+	font: inherit;
+}
+
+/* ========================================================================== *\
+	#VARIABLES
+\* ========================================================================== */
+:root {
+	--cell-size: 25px;
+}
+/* == VARIABLES ============================================================= */
+
+
+
+/* ========================================================================== *\
+	#ELEMENTS
+\* ========================================================================== */
+html {
+	box-sizing: border-box;
+	height: 100%;
+}
+
+html,
+body {
+	margin: 0;
+}
+
+body {
+	display: grid;
+	font: 14px/1.5 Verdana;
+	grid-template-columns: 3fr 1fr;
+	min-height: 100%;
+}
+
+h1 {
+	background-color: #D9D4C5;
+	margin: 0 0 1rem;
+	padding: .25em .5em;
+}
+
+main {
+	display: flex;
+}
+
+label {
+	display: block;
+}
+/* == ELEMENTS ============================================================== */
+
+
+.c-maze-visualizer {
+	align-items: center;
+	background-color: #FDF6E3;
+
+	display: flex;
+	justify-content: center;
+	padding: 1em;
+}
+aside {
+	background-color: #EEE8D5;
+	box-shadow: 0 0 1em rgba(0, 0, 0, .2);
+	padding: 1em;
+}
+.c-maze {
+	background-color: #e0e0e0;
+	box-shadow: 0 0 1em rgba(0,0,0, .2);
+	display: flex;
+	flex-wrap: wrap;
+}
+.cell {
+	border: 0 solid #e0e0e0;
+	color: #999;
+	font-size: 16px;
+	height: var(--cell-size);
+	line-height: var(--cell-size);
+	text-align: center;
+	transition: background-color .3s ease-out;
+	user-select: none;
+	width: var(--cell-size);
+}
+.cell.is-visited {
+	background-color: white;
+	border-color: white;
+}
+.cell.is-active {
+	background-color: blue;
+	border-color: blue;
+}
+.cell.border-top {
+	border-top-color: #999;
+	border-top-width: 2px;
+}
+.cell.border-right {
+	border-right-color: #999;
+	border-right-width: 2px;
+}
+.cell.border-bottom {
+	border-bottom-color: #999;
+	border-bottom-width: 2px;
+}
+.cell.border-left {
+	border-left-color: #999;
+	border-left-width: 2px;
+}
+.cell.current-cell {
+	background-color: red;
+}
+
+.cell.blocked {
+	background-color: #999;
+}
+.cell.path {
+	background-color: skyblue;
+}
+
+
+.u-3\/4 {
+	width: 75%;
+}

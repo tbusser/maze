@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Maze generator</title>
+	<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+	<article class="js-visualiser c-maze-visualizer">
+		<div class="js-output c-maze"></div>
+	</article>
+	<aside>
+		<H1>Maze creation</H1>
+
+		<form action="" class="js-create-maze-form">
+			<label for="">
+				Number of columns:
+				<input type="number" min="3" max="50" id="config-columns" value="10">
+			</label>
+			<label for="">
+				Number of rows:
+				<input type="number" min="3" max="50" id="config-rows" value="10">
+			</label>
+			<button class="js-create-maze">Create new maze</button>
+		</form>
+	</aside>
+	<script type="module" src="scripts/maze-visualiser.js"></script>
+</body>
+</html>
