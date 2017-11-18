@@ -53,7 +53,7 @@ function createMatrix(cellCallback) {
 }
 
 /**
- * Creates an instance of MazeCell for the provided coordinates.
+ * Creates an instance of MazeCell for the provided location.
  *
  * @param {Number} x The column in which the cell should be located.
  * @param {Number} y The row in which the cell should be located.
@@ -186,19 +186,19 @@ function getCellsForRow(row) {
  */
 function getUnvisitedNeighbors(cell) {
 	const
-		// Get the coordinates of the provided cell.
-		{ x, y } = cell.coordinate,
+		// Get the location of the provided cell.
+		{ column, row } = cell.location,
 		// Get the neighboring cells. Don't worry about creating invalid
-		// coordinates, getCell will just return null for invalid coordinates.
+		// locations, getCell will just return null for invalid locations.
 		neighbors = [
-			this.getCell(x - 1, y),
-			this.getCell(x + 1, y),
-			this.getCell(x, y - 1),
-			this.getCell(x, y + 1)
+			this.getCell(column - 1, row),
+			this.getCell(column + 1, row),
+			this.getCell(column, row - 1),
+			this.getCell(column, row + 1)
 		];
 
 	// Filter the array with neighbors to remove all null objects, due to
-	// invalid coordinates, and cells which have already been visisted by the
+	// invalid locations, and cells which have already been visisted by the
 	// maze generator.
 	return neighbors.filter(neighbor => (neighbor != null) && !neighbor.isVisited);
 }
