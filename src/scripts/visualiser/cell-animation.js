@@ -332,7 +332,7 @@ class CellAnimation {
 		if (!this[propertyNames.runningState] === runningStates.running) {
 			return;
 		}
-		console.log('animation paused');
+
 		this[propertyNames.runningState] = runningStates.paused;
 		clearTimeout(this[propertyNames.timeoutId]);
 	}

@@ -7,7 +7,7 @@ import {
 } from '../utilities.js';
 
 import Cell from '../cell.js';
-import CellAnimation from './cell-animation.js';
+import Grid from '../grid/grid.base.js';
 import VisualiserBase from './maze-visualiser.base.js';
 
 /* == IMPORTS =============================================================== */
@@ -19,12 +19,11 @@ import VisualiserBase from './maze-visualiser.base.js';
 \* ========================================================================== */
 
 const
-	transitionDuration = 500,
-
 	propertyNames = {
 		cells: Symbol('cells'),
 		context: Symbol('context'),
-		previousCell: Symbol('previousCell')
+		grid: Symbol('grid'),
+		previousRecord: Symbol('previousCell')
 	},
 
 	selectors = {
@@ -48,24 +47,11 @@ const
 /**
  *
  *
- */
-function clearAnimations() {
-	this[propertyNames.cells].forEach(cellInfo => {
-		if (!isNil(cellInfo.animation)) {
-			cellInfo.animation.pause();
-		}
-	});
-
-	this[propertyNames.cells].clear();
-}
-
-/**
- *
- *
  * @param {Cell} cell
+ *
  * @returns {String}
  */
-function getAnimationKeyForCell(cell) {
+function getKeyForCell(cell) {
 	return `${cell.column}_${cell.row}`;
 }
 
@@ -135,6 +121,8 @@ function hasWall(cell, side, outer = false) {
  * @param {any} isEntry
  */
 function markCellAsEntryExit(cell, isEntry) {
+	const
+		cellKey = getKeyForCell(cell);
 	for (let key in Cell.sides) {
 		if (!Cell.sides.hasOwnProperty(key)) {
 			continue;
@@ -148,15 +136,9 @@ function markCellAsEntryExit(cell, isEntry) {
 			!hasWall(cell, side)
 		) {
 			const
-				context = this[propertyNames.context],
-				rectX = (cell.column * this.cellSize) + (this.cellSize / 2),
-				rectY = (cell.row * this.cellSize) + (this.cellSize / 2);
-
-			context.font = '20px Arial';
-			context.textAlign = 'center';
-			context.textBaseline = 'middle';
-			context.fillStyle = '#000000';
-			context.fillText(getSymbolForSide(side, isEntry), rectX, rectY);
+				text = getSymbolForSide(side, isEntry);
+			this[propertyNames.cells].get(cellKey).text = text;
+			this[propertyNames.grid].setTextForCell(cell.column, cell.row, text);
 		}
 	}
 }
@@ -168,32 +150,11 @@ function markCellAsEntryExit(cell, isEntry) {
  */
 function restorePreviousCellVisualState(context) {
 	const
-		{ column, row } = this[propertyNames.previousCell].cell.location,
-		walls = this[propertyNames.previousCell].walls,
-		animationKey = getAnimationKeyForCell(this[propertyNames.previousCell].cell);
+		{ cell, walls } = this[propertyNames.previousRecord],
+		cellKey = getKeyForCell(cell),
+		toColor = this[propertyNames.cells].get(cellKey).color;
 
-	/** @type {CellAnimation} */
-	let
-		{ animation, isFirst } = this[propertyNames.cells].get(animationKey);
-
-	animation.pause();
-	animation = new CellAnimation({
-		fromColor: animation.colorAtCurrentStop,
-		toColor: (isFirst) ? 'blue' : 'white',
-		duration: transitionDuration
-	}, {
-		x: column * this.cellSize,
-		y: row * this.cellSize,
-		size: this.cellSize,
-		context: context,
-		walls: walls
-	});
-
-	animation.run();
-	this[propertyNames.cells].set(animationKey, {
-		animation,
-		isFirst
-	});
+	this[propertyNames.grid].setColorForCell(cell.column, cell.row, walls, toColor);
 }
 
 /**
@@ -201,13 +162,12 @@ function restorePreviousCellVisualState(context) {
  *
  */
 function showEntryAndExitCell() {
-	setTimeout(() => {
-		markCellAsEntryExit.call(this, this.mazeConfiguration.entryCell, true);
-		markCellAsEntryExit.call(this, this.mazeConfiguration.exitCell, false);
-	}, 500);
+	markCellAsEntryExit.call(this, this.mazeConfiguration.entryCell, true);
+	markCellAsEntryExit.call(this, this.mazeConfiguration.exitCell, false);
 }
 
 /* == PRIVATE METHODS ======================================================= */
+
 
 
 /* ========================================================================== *\
@@ -223,8 +183,25 @@ class MazeVisualiserCanvas extends VisualiserBase {
 
 		this[propertyNames.cells] = new Map();
 		this[propertyNames.context] = getContext(baseElement);
+		this[propertyNames.grid] = new Grid(baseElement.querySelector(selectors.canvas));
 	}
 	/* == CONSTRUCTOR ======================================================= */
+
+
+
+	/* ====================================================================== *\
+		INSTANCE PROPERTIES
+	\* ====================================================================== */
+
+	/* ---------------------------------- *\
+		grid (read-only)
+	\* ---------------------------------- */
+	get grid() {
+		return this[propertyNames.grid];
+	}
+	/* -- grid (read-only) ---------- */
+
+	/* == INSTANCE PROPERTIES =============================================== */
 
 
 
@@ -233,86 +210,43 @@ class MazeVisualiserCanvas extends VisualiserBase {
 	\* ====================================================================== */
 
 	__finalizeVisualisation() {
+		const
+			pCell = this[propertyNames.previousRecord].cell,
+			pWalls = this[propertyNames.previousRecord].walls;
+		this[propertyNames.grid].setColorForCell(pCell.column, pCell.row, pWalls, 'white');
 		showEntryAndExitCell.call(this);
+		this[propertyNames.grid].allowInteraction = true;
 	}
 
 	__initVisualisation(rows, columns) {
-		clearAnimations.call(this);
-
-		/** @type {CanvasRenderingContext2D} */
-		const
-			canvas = this.baseElement.querySelector(selectors.canvas);
-		if (
-			canvas === null ||
-			isNil(this[propertyNames.context])
-		) {
-			return;
-		}
-
-		// Update the dimensions of the canvas.
-		canvas.height = (rows * this.cellSize);
-		canvas.width = (columns * this.cellSize);
-
-		// Clear the maze that may already have been drawn on the canvas.
-		this[propertyNames.context].clearRect(0, 0, canvas.width, canvas.height);
+		this[propertyNames.grid].allowInteraction = false;
+		this[propertyNames.grid].setupGrid(columns, rows, this.cellSize);
 		// Clear the previously drawn cell.
-		this[propertyNames.previousCell] = null;
+		this[propertyNames.cells].clear();
+		this[propertyNames.previousRecord] = null;
 	}
 
 	__visualiseStep(historyRecord) {
 		/** @type {CanvasRenderingContext2D} */
 		const
-			context = this[propertyNames.context],
-			{ cell, walls } = historyRecord,
-			cellX = cell.column * this.cellSize,
-			cellY = cell.row * this.cellSize;
-		if (isNil(context)) {
-			return;
-		}
+			context = this[propertyNames.context];
 
 		// When there is a previous history record. we need to restore this cell
 		// from it's "current cell" state to its "natural" state.
-		if (!isNil(this[propertyNames.previousCell])) {
+		if (!isNil(this[propertyNames.previousRecord])) {
 			restorePreviousCellVisualState.call(this, context);
 		}
-		this[propertyNames.previousCell] = historyRecord;
+		this[propertyNames.previousRecord] = historyRecord;
 
 		const
-			animationKey = getAnimationKeyForCell(cell),
-			hasAnimation = (this[propertyNames.cells].has(animationKey));
-		let
-			animation,
-			transitionInfo;
+			{ cell, walls } = historyRecord,
+			cellKey = getKeyForCell(cell),
+			hasKey = this[propertyNames.cells].has(cellKey);
 
-		if (hasAnimation) {
-			const
-				oldAnimation = this[propertyNames.cells].get(animationKey).animation;
-			oldAnimation.pause();
-			transitionInfo = {
-				fromColor: oldAnimation.colorAtCurrentStop,
-				toColor: 'red',
-				duration: transitionDuration// - oldAnimation.timeLapsed
-			}
-		} else {
-			transitionInfo = {
-				fromColor: 'white',
-				toColor: 'red',
-				duration: transitionDuration
-			};
-		}
-
-		animation = new CellAnimation(transitionInfo, {
-			x: cellX,
-			y: cellY,
-			size: this.cellSize,
-			context: context,
-			walls: walls
+		this[propertyNames.cells].set(cellKey, {
+			color: (hasKey) ? 'white': 'blue'
 		});
-		this[propertyNames.cells].set(animationKey, {
-			animation,
-			isFirst: !hasAnimation
-		});
-		animation.run();
+		this[propertyNames.grid].setColorForCell(cell.column, cell.row, walls, 'red');
 	}
 
 	/* == OVERRIDDEN METHODS ================================================ */

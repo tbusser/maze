@@ -113,6 +113,7 @@ function init() {
 	}
 	if (output !== null) {
 		interactivePathController = new InteractivePath(output);
+		interactivePathController.grid = visualiser.grid;
 	}
 
 	visualiser.stepInterval = 20;
