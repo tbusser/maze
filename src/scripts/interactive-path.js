@@ -153,10 +153,10 @@ function togglePathColor(cell) {
 
 	if (this[propertyNames.activeCells].has(cellKey)) {
 		this[propertyNames.activeCells].delete(cellKey);
-		this.grid.setColorForCell(column, row, cell.activeWalls, 'white');
+		this.grid.setColorForCellAnimated(column, row, cell.activeWalls, 'skyblue', 'white');
 	} else {
 		this[propertyNames.activeCells].set(cellKey, true);
-		this.grid.setColorForCell(column, row, cell.activeWalls, 'skyblue');
+		this.grid.setColorForCellAnimated(column, row, cell.activeWalls, 'white', 'skyblue');
 	}
 }
 

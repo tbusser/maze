@@ -93,10 +93,18 @@ function onCreateMazeSubmitHandler(event) {
  *
  */
 function createAndDisplayMaze(columns = defaultColumns, rows = defaultRows) {
+	const
+		selectedDrawOption = document.querySelector('[name="draw-options"]:checked');
 	emptyQueue();
 	myMaze.generateMaze(columns, rows);
 	generateVisualMaze(rows, columns);
-	visualiser.run();
+	if (selectedDrawOption.value === 'instantly') {
+		visualiser.grid.allowInteraction = true;
+		visualiser.grid.drawGrid(myMaze.cells);
+		interactivePathController.start(myMaze);
+	} else {
+		visualiser.run();
+	}
 }
 
 /**

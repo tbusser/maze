@@ -8,6 +8,7 @@ import {
 } from '../utilities.js';
 
 import Cell from '../cell.js';
+import ColorTransition from './canvas-color-transition.js';
 
 /* == IMPORTS =============================================================== */
 
@@ -19,7 +20,9 @@ import Cell from '../cell.js';
 
 const
 	borderColor = '#999',
+	defaultTransitionDuration = 500,
 	textColor = '#000',
+	transitionInterval = (1000 / 60),
 
 	eventNames = {
 		onCellClicked: 'onmouseclicked',
@@ -35,7 +38,8 @@ const
 		boundHandlers: Symbol('boundHandlers'),
 		cellSize: Symbol('cellSize'),
 		cellText: Symbol('cellText'),
-		context: Symbol('context')
+		context: Symbol('context'),
+		transitionTimeoutId: Symbol('transitionTimeoutId')
 	}
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -49,29 +53,7 @@ const
 /**
  *
  *
- * @param {any} eventName
- * @param {any} clientX
- * @param {any} clientY
- */
-function dispatchCellEvent(eventName, clientX, clientY) {
-	const
-		canvasX = clientX - this.baseElement.offsetLeft,
-		canvasY = clientY - this.baseElement.offsetTop,
-		{ column, row } = coordinatesToLocation.call(this, canvasX, canvasY),
-		cellEvent = new CustomEvent(eventName, {
-			detail: {
-				column,
-				row
-			}
-		});
-
-	this.baseElement.dispatchEvent(cellEvent);
-}
-
-/**
- *
- *
- * @param {any} event
+ * @param {MouseEvent} event
  */
 function onClickHandler(event) {
 	const
@@ -83,7 +65,7 @@ function onClickHandler(event) {
 /**
  *
  *
- * @param {any} event
+ * @param {MouseEvent} event
  */
 function onMouseDownHandler(event) {
 	const
@@ -95,7 +77,7 @@ function onMouseDownHandler(event) {
 /**
  *
  *
- * @param {any} event
+ * @param {MouseEvent} event
  */
 function onMouseMoveHandler(event) {
 	const
@@ -107,13 +89,23 @@ function onMouseMoveHandler(event) {
 /**
  *
  *
- * @param {any} event
+ * @param {MouseEvent} event
  */
 function onMouseUpHandler(event) {
 	const
 		{ clientX, clientY } = event;
 
 	dispatchCellEvent.call(this, eventNames.onCellMouseUp, clientX, clientY);
+}
+
+/**
+ *
+ *
+ * @param {TransitionDoneEvent} event
+ */
+function onTransitionDoneHandler(event) {
+	// console.log(`A transition is done for location ${event.detail.instance.id}`);
+	removeAnimation.call(this, event.detail.instance.id);
 }
 
 /* == EVENT HANDLING ======================================================== */
@@ -123,6 +115,80 @@ function onMouseUpHandler(event) {
 /* ========================================================================== *\
 	PRIVATE METHODS
 \* ========================================================================== */
+
+/* ---------------------------------- *\
+	Animation methods
+\* ---------------------------------- */
+/**
+ *
+ *
+ * @param {String} key
+ * @param {Object} animationInfo
+ *
+ * @private
+ * @memberof Grid
+ */
+function addAnimation(key, animationInfo) {
+	if (this[propertyNames.activeAnimations].size === 0) {
+		// console.log('Starting animations');
+		performAnimations.call(this);
+	}
+
+	animationInfo.animation.onTransitionDone(this[propertyNames.boundHandlers].transitionDone);
+	this[propertyNames.activeAnimations].set(key, animationInfo);
+}
+
+/**
+ *
+ *
+ */
+function clearAnimations() {
+	clearTimeout(this[propertyNames.transitionTimeoutId]);
+	this[propertyNames.activeAnimations].clear();
+}
+
+/**
+ *
+ *
+ */
+function performAnimations() {
+	const
+		animations = this[propertyNames.activeAnimations];
+
+	animations.forEach((value, key) => {
+		const
+			color = value.animation.shift();
+		drawCell.call(this, value.column, value.row, value.walls, color);
+	});
+
+	this[propertyNames.transitionTimeoutId] = setTimeout(() => {
+		performAnimations.call(this);
+	}, transitionInterval);
+}
+
+/**
+ *
+ *
+ * @param {any} key
+ * @returns
+ */
+function removeAnimation(key) {
+	if (!this[propertyNames.activeAnimations].has(key)) {
+		return;
+	}
+
+	// if (!this[propertyNames.activeAnimations].get(key).animation.transitionDone) {
+	// 	console.log(`Removing active animation for location ${key}`);
+	// }
+	this[propertyNames.activeAnimations].delete(key);
+	if (this[propertyNames.activeAnimations].size === 0) {
+		// console.log('All animation are done');
+		clearTimeout(this[propertyNames.transitionTimeoutId]);
+	}
+}
+
+/* -- Animation methods ------------- */
+
 
 /**
  *
@@ -140,6 +206,28 @@ function coordinatesToLocation(x, y) {
 		column: Math.max(0, Math.floor(x / this.cellSize)),
 		row: Math.max(0, Math.floor(y / this.cellSize))
 	};
+}
+
+/**
+ *
+ *
+ * @param {MouseEvent} eventName
+ * @param {Number} clientX
+ * @param {Number} clientY
+ */
+function dispatchCellEvent(eventName, clientX, clientY) {
+	const
+		canvasX = clientX - this.baseElement.offsetLeft,
+		canvasY = clientY - this.baseElement.offsetTop,
+		{ column, row } = coordinatesToLocation.call(this, canvasX, canvasY),
+		cellEvent = new CustomEvent(eventName, {
+			detail: {
+				column,
+				row
+			}
+		});
+
+	this.baseElement.dispatchEvent(cellEvent);
 }
 
 /**
@@ -184,10 +272,10 @@ function drawBorder(context, rect) {
 /**
  *
  *
- * @param {any} column
- * @param {any} row
- * @param {any} walls
- * @param {any} color
+ * @param {Number} column
+ * @param {Number} row
+ * @param {Number} walls
+ * @param {String} color
  *
  * @private
  * @memberof Grid
@@ -249,9 +337,9 @@ function drawCell(column, row, walls, color) {
 /**
  *
  *
- * @param {any} column
- * @param {any} row
- * @param {any} text
+ * @param {Number} column
+ * @param {Number} row
+ * @param {String} text
  */
 function drawTextIncell(column, row, text) {
 	/** @type {CanvasRenderingContext2D} */
@@ -275,8 +363,8 @@ function drawTextIncell(column, row, text) {
 /**
  *
  *
- * @param {any} column
- * @param {any} row
+ * @param {Number} column
+ * @param {Number} row
  * @returns
  */
 function getKeyForLocation(column, row) {
@@ -307,13 +395,15 @@ class Grid {
 			throw 'Unable to create instance of Grid, no base element has been provided';
 		}
 
+		this[propertyNames.activeAnimations] = new Map();
 		this[propertyNames.allowInteraction] = false;
 		this[propertyNames.baseElement] = baseElement;
 		this[propertyNames.boundHandlers] = {
 			click: onClickHandler.bind(this),
 			mousedown: onMouseDownHandler.bind(this),
 			mousemove: onMouseMoveHandler.bind(this),
-			mouseup: onMouseUpHandler.bind(this)
+			mouseup: onMouseUpHandler.bind(this),
+			transitionDone: onTransitionDoneHandler.bind(this)
 		};
 		this[propertyNames.cellText] = new Map();
 		this[propertyNames.context] = baseElement.getContext('2d');
@@ -367,6 +457,7 @@ class Grid {
 			if (!this[propertyNames.boundHandlers].hasOwnProperty(eventName)) {
 				continue;
 			}
+
 			this.baseElement[methodName](eventName, this[propertyNames.boundHandlers][eventName]);
 		}
 	}
@@ -441,7 +532,7 @@ class Grid {
 	 * @memberof Grid
 	 */
 	clear() {
-		// TODO: stop all animations.
+		clearAnimations.call(this);
 
 		/** @type {CanvasRenderingContext2D} */
 		const
@@ -449,6 +540,12 @@ class Grid {
 
 		// Clear the maze that may already have been drawn on the canvas.
 		context.clearRect(0, 0, this[propertyNames.baseElement].width, this[propertyNames.baseElement].height);
+	}
+
+	drawGrid(gridCells) {
+		gridCells.forEach(row => row.forEach(cell => {
+			this.setColorForCell(cell.column, cell.row, cell.activeWalls, 'white');
+		}));
 	}
 
 	/**
@@ -472,14 +569,52 @@ class Grid {
 	 * @param {Number} row
 	 * @param {Number} walls
 	 * @param {String} color
+	 *
 	 * @memberof Grid
 	 */
 	setColorForCell(column, row, walls, color) {
+		const
+			cellKey = getKeyForLocation(column, row);
+		removeAnimation.call(this, cellKey);
+
 		drawCell.call(this, column, row, walls, color);
 	}
 
-	setColorForCellAnimated(column, row, walls, fromColor, toColor, duration) {
-		//
+	/**
+	 *
+	 *
+	 * @param {Number} column
+	 * @param {Number} row
+	 * @param {Number} walls
+	 * @param {String} fromColor
+	 * @param {String} toColor
+	 * @param {Number} [duration=defaultTransitionDuration]
+	 *
+	 * @memberof Grid
+	 */
+	setColorForCellAnimated(column, row, walls, fromColor, toColor, duration = defaultTransitionDuration) {
+		const
+			cellKey = getKeyForLocation(column, row),
+			existingAnimation = this[propertyNames.activeAnimations].get(cellKey);
+		if (!isNil(existingAnimation)) {
+			// const
+			// 	newFromColor = existingAnimation.animation.currentColor;
+			// console.log(`Changing fromColor for location ${cellKey}, ${fromColor} -> ${newFromColor}`);
+			fromColor = existingAnimation.animation.currentColor;
+			existingAnimation.animation.offTransitionDone(this[propertyNames.boundHandlers].transitionDone);
+		}
+
+		const
+			animation = new ColorTransition(cellKey, fromColor, toColor, duration);
+
+		addAnimation.call(this, cellKey, {
+			animation,
+			column,
+			row,
+			walls
+		});
+
+		// console.log(`Starting animation for location ${cellKey}, ${fromColor} -> ${toColor}`);
 	}
 
 	/**

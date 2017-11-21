@@ -29,7 +29,15 @@
 
 		<h1 class="mt+">Maze playback</h1>
 
-		<input id="stepInterval" type="range" list="tickmarks" class="js-cell-speed u-12/12" min="5" max="1000" value="250">
+		<label for="draw-option-instantly">
+			<input id="draw-option-instantly" type="radio" name="draw-options" value="instantly" checked="checked">
+			Draw maze without animations
+		</label>
+		<label for="draw-option-animated">
+			<input id="draw-option-animated" type="radio" name="draw-options" value="animated">
+			Draw maze animated
+		</label>
+		<input id="stepInterval" type="range" list="tickmarks" class="js-cell-speed mt u-12/12" min="5" max="1000" value="250">
 		<datalist id="tickmarks">
 			<option value="5"/>
 			<option value="20"/>

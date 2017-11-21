@@ -121,8 +121,6 @@ function hasWall(cell, side, outer = false) {
  * @param {any} isEntry
  */
 function markCellAsEntryExit(cell, isEntry) {
-	const
-		cellKey = getKeyForCell(cell);
 	for (let key in Cell.sides) {
 		if (!Cell.sides.hasOwnProperty(key)) {
 			continue;
@@ -137,7 +135,6 @@ function markCellAsEntryExit(cell, isEntry) {
 		) {
 			const
 				text = getSymbolForSide(side, isEntry);
-			this[propertyNames.cells].get(cellKey).text = text;
 			this[propertyNames.grid].setTextForCell(cell.column, cell.row, text);
 		}
 	}
@@ -154,7 +151,7 @@ function restorePreviousCellVisualState(context) {
 		cellKey = getKeyForCell(cell),
 		toColor = this[propertyNames.cells].get(cellKey).color;
 
-	this[propertyNames.grid].setColorForCell(cell.column, cell.row, walls, toColor);
+	this[propertyNames.grid].setColorForCellAnimated(cell.column, cell.row, walls, 'red', toColor);
 }
 
 /**
@@ -241,12 +238,13 @@ class MazeVisualiserCanvas extends VisualiserBase {
 		const
 			{ cell, walls } = historyRecord,
 			cellKey = getKeyForCell(cell),
-			hasKey = this[propertyNames.cells].has(cellKey);
+			hasKey = this[propertyNames.cells].has(cellKey),
+			fromColor = (hasKey) ? 'blue' : 'white';
 
 		this[propertyNames.cells].set(cellKey, {
-			color: (hasKey) ? 'white': 'blue'
+			color: (hasKey) ? 'white' : 'blue'
 		});
-		this[propertyNames.grid].setColorForCell(cell.column, cell.row, walls, 'red');
+		this[propertyNames.grid].setColorForCellAnimated(cell.column, cell.row, walls, fromColor, 'red');
 	}
 
 	/* == OVERRIDDEN METHODS ================================================ */
