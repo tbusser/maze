@@ -2,7 +2,7 @@
 	IMPORTS
 \* ========================================================================== */
 
-import MazeVisualiser from './visualiser/maze-visualiser.div.js';
+import MazeVisualiser from './visualiser/maze-visualiser.canvas.js';
 import InteractivePath from './interactive-path.js';
 import Maze from './maze.js';
 
@@ -12,6 +12,8 @@ const
 	selectors = {
 		createMazeForm: '.js-create-maze-form',
 		createMazeTrigger: '.js-create-maze',
+		cellSpeedSelect: '.js-cell-speed',
+		cellSpeedLabel: '.js-cell-speed-label',
 		inputColumns: '#config-columns',
 		inputRows: '#config-rows',
 		output: '.js-output',
@@ -91,10 +93,18 @@ function onCreateMazeSubmitHandler(event) {
  *
  */
 function createAndDisplayMaze(columns = defaultColumns, rows = defaultRows) {
+	const
+		selectedDrawOption = document.querySelector('[name="draw-options"]:checked');
 	emptyQueue();
 	myMaze.generateMaze(columns, rows);
 	generateVisualMaze(rows, columns);
-	visualiser.run();
+	if (selectedDrawOption.value === 'instantly') {
+		visualiser.grid.allowInteraction = true;
+		visualiser.grid.drawGrid(myMaze.cells);
+		interactivePathController.start(myMaze);
+	} else {
+		visualiser.run();
+	}
 }
 
 /**
@@ -103,13 +113,18 @@ function createAndDisplayMaze(columns = defaultColumns, rows = defaultRows) {
 function init() {
 	const
 		createForm = document.querySelector(selectors.createMazeForm),
-		output = document.querySelector(selectors.output);
+		output = document.querySelector(selectors.output),
+		speedSelect = document.querySelector(selectors.cellSpeedSelect);
+
 	if (createForm !== null) {
 		createForm.addEventListener('submit', onCreateMazeSubmitHandler);
 	}
 	if (output !== null) {
 		interactivePathController = new InteractivePath(output);
+		interactivePathController.grid = visualiser.grid;
 	}
+
+	visualiser.stepInterval = 20;
 
 	visualiser.onCellSizeChanged(event => {
 		const
@@ -121,6 +136,23 @@ function init() {
 	visualiser.onMazeVisualisationComplete(event => {
 		interactivePathController.start(myMaze);
 	});
+
+	if (speedSelect !== null) {
+		visualiser.stepInterval = speedSelect.value;
+		speedSelect.addEventListener('change', event => {
+			const
+				value = parseFloat(event.target.value);
+			visualiser.stepInterval = value;
+			const
+				label = document.querySelector(selectors.cellSpeedLabel),
+				cellsPerSecond = (1000 / value);
+			if (cellsPerSecond >= 1) {
+				label.textContent = `${(1000 / value).toFixed(1)} steps/second`;
+			} else {
+				label.textContent = `${value / 1000}s per step`;
+			}
+		});
+	}
 
 	myMaze.onStepTaken(onStepTakenHandler);
 

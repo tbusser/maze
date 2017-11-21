@@ -17,10 +17,10 @@ import {
 /**
  * An object for expressing the location of a cell within the maze.
  *
- * @typedef {Object} Coordinate
- * @property {Number} x The horizontal position of the cell in the maze. The
+ * @typedef {Object} Location
+ * @property {Number} column The horizontal position of the cell in the maze. The
  *           first cell is located at x=0.
- * @property {Number} y The vertical position of the cell in the maze. The
+ * @property {Number} row The vertical position of the cell in the maze. The
  *           first cell is located at y=0.
  */
 
@@ -55,8 +55,8 @@ const
 		isVisited: Symbol('isVisited'),
 		outerWalls: Symbol('outerWalls'),
 		walls: Symbol('walls'),
-		x: Symbol('column'),
-		y: Symbol('row')
+		column: Symbol('column'),
+		row: Symbol('row')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -156,8 +156,8 @@ class Cell {
 		CONSTRUCTOR
 	\* ====================================================================== */
 	constructor(x, y) {
-		this[propertyNames.x] = x;
-		this[propertyNames.y] = y;
+		this[propertyNames.column] = x;
+		this[propertyNames.row] = y;
 		this[propertyNames.isVisited] = false;
 		this[propertyNames.outerWalls] = sides.none;
 		this[propertyNames.walls] = sides.bottom | sides.left | sides.right | sides.top;
@@ -208,28 +208,28 @@ class Cell {
 	 * @memberof Cell
 	 */
 	get column() {
-		return this[propertyNames.x];
+		return this[propertyNames.column];
 	}
 	/* -- column (read-only) ------------ */
 
 
 	/* ---------------------------------- *\
-		coordinate (read-only)
+		location (read-only)
 	\* ---------------------------------- */
 	/**
-	 * Returns the coordinates for the cell.
+	 * Returns the locations for the cell.
 	 *
-	 * @type {Coordinate}
+	 * @type {Location}
 	 * @readonly
 	 * @memberof Cell
 	 */
-	get coordinate() {
+	get location() {
 		return {
-			x: this[propertyNames.x],
-			y: this[propertyNames.y]
+			column: this[propertyNames.column],
+			row: this[propertyNames.row]
 		};
 	}
-	/* -- coordinate (read-only) -------- */
+	/* -- location (read-only) ---------- */
 
 
 	/* ---------------------------------- *\
@@ -276,7 +276,7 @@ class Cell {
 	 * @memberof Cell
 	 */
 	get row() {
-		return this[propertyNames.y];
+		return this[propertyNames.row];
 	}
 	/* -- row (read-only) --------------- */
 

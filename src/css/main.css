@@ -17,6 +17,7 @@ input {
 \* ========================================================================== */
 :root {
 	--cell-size: 25px;
+	--grid-spacing: 16;
 }
 /* == VARIABLES ============================================================= */
 
@@ -53,6 +54,7 @@ main {
 }
 
 label {
+	cursor: pointer;
 	display: block;
 }
 /* == ELEMENTS ============================================================== */
@@ -124,6 +126,16 @@ aside {
 }
 
 
+.mt {
+	margin-top: calc(var(--grid-spacing) * 1px);
+}
+.mt\+ {
+	margin-top: calc(var(--grid-spacing) * 1.5px);
+}
+
 .u-3\/4 {
 	width: 75%;
+}
+.u-12\/12 {
+	width: 100%;
 }

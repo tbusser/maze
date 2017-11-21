@@ -9,7 +9,8 @@
 </head>
 <body>
 	<article class="js-visualiser c-maze-visualizer">
-		<div class="js-output c-maze"></div>
+		<canvas class="js-output c-maze" height="1" width="1"></canvas>
+		<!-- <div class="js-output c-maze" height="1" width="1"></div> -->
 	</article>
 	<aside>
 		<H1>Maze creation</H1>
@@ -17,14 +18,41 @@
 		<form action="" class="js-create-maze-form">
 			<label for="">
 				Number of columns:
-				<input type="number" min="3" max="50" id="config-columns" value="10">
+				<input type="number" min="3" max="50" id="config-columns" value="5">
 			</label>
 			<label for="">
 				Number of rows:
-				<input type="number" min="3" max="50" id="config-rows" value="10">
+				<input type="number" min="3" max="50" id="config-rows" value="5">
 			</label>
 			<button class="js-create-maze">Create new maze</button>
 		</form>
+
+		<h1 class="mt+">Maze playback</h1>
+
+		<label for="draw-option-instantly">
+			<input id="draw-option-instantly" type="radio" name="draw-options" value="instantly" checked="checked">
+			Draw maze without animations
+		</label>
+		<label for="draw-option-animated">
+			<input id="draw-option-animated" type="radio" name="draw-options" value="animated">
+			Draw maze animated
+		</label>
+		<input id="stepInterval" type="range" list="tickmarks" class="js-cell-speed mt u-12/12" min="5" max="1000" value="250">
+		<datalist id="tickmarks">
+			<option value="5"/>
+			<option value="20"/>
+			<option value="40"/>
+			<option value="100"/>
+			<option value="250"/>
+			<option value="500"/>
+			<option value="1000"/>
+			<option value="2000"/>
+			<option value="2500"/>
+			<option value="3000"/>
+		</datalist>
+		<label for="stepInterval">
+			Render speed: <span class="js-cell-speed-label">4 steps/second</span>
+		</label>
 	</aside>
 	<script type="module" src="scripts/maze-visualiser.js"></script>
 </body>
