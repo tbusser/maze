@@ -34,6 +34,8 @@ const
  *
  * @returns {Array} An array with a color per transition stop. The colors are
  *          formatted as a string in the format of "rgba(R,G,B,A)".
+ *
+ * @see {@link https://coderwall.com/p/cmslya/javascript-color-smooth-transition}
  */
 function createColorStops(fromColor, toColor, duration) {
 	const
