@@ -4,7 +4,7 @@
 
 import MazeVisualiser from './visualiser/maze-visualiser.canvas.js';
 import InteractivePath from './interactive-path.js';
-import Maze from './maze.js';
+import Maze from './generators/maze.js';
 
 /* == IMPORTS =============================================================== */
 

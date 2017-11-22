@@ -4,7 +4,7 @@
 
 import {
 	getRandomInt
-} from './utilities.js';
+} from './utilities/utilities.js';
 
 /* == IMPORTS =============================================================== */
 

@@ -5,7 +5,7 @@
 import {
 	isNil,
 	isNilOrEmpty
-} from '../utilities.js';
+} from '../utilities/utilities.js';
 
 import Cell from '../cell.js';
 import ColorTransition from './canvas-color-transition.js';

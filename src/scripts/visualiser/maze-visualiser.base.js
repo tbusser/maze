@@ -5,7 +5,7 @@
 import {
 	isNil,
 	isNilOrEmpty
-} from '../utilities.js';
+} from '../utilities/utilities.js';
 
 /* == IMPORTS =============================================================== */
 

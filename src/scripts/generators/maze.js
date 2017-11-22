@@ -4,9 +4,9 @@
 
 import {
 	getRandomInt
-} from './utilities.js';
+} from '../utilities/utilities.js';
 
-import MazeCell from './cell.js';
+import MazeCell from '../cell.js';
 
 /* == IMPORTS =============================================================== */
 

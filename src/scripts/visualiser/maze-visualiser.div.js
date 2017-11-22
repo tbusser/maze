@@ -4,7 +4,7 @@
 
 import {
 	isNil
-} from '../utilities.js';
+} from '../utilities/utilities.js';
 
 import Cell from '../cell.js';
 import VisualiserBase from './maze-visualiser.base.js';
