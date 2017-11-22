@@ -312,6 +312,25 @@ class Cell {
 	}
 
 	/**
+	 * Returns an array with locations that may contain a cell. The returned
+	 * locations are all direct neighbors of the cell instance.
+	 *
+	 * @returns {Array} The method returns an array with objects, each object
+	 *          represents a potential location for a neighbor. It is possible
+	 *          that a location doesn't represent a valid cell coordinate.
+	 *
+	 * @memberof Cell
+	 */
+	getNeighborsLocations() {
+		return [
+			{ column: this.column - 1, row: this.row},
+			{ column: this.column + 1, row: this.row},
+			{ column: this.column, row: this.row - 1},
+			{ column: this.column, row: this.row + 1}
+		];
+	}
+
+	/**
 	 * Returns whether or not there is a path between two adjoining cells.
 	 *
 	 * @param {Cell} cell The cell to check for if there is a direct path

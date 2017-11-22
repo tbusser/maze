@@ -190,12 +190,8 @@ function getUnvisitedNeighbors(cell) {
 		{ column, row } = cell.location,
 		// Get the neighboring cells. Don't worry about creating invalid
 		// locations, getCell will just return null for invalid locations.
-		neighbors = [
-			this.getCell(column - 1, row),
-			this.getCell(column + 1, row),
-			this.getCell(column, row - 1),
-			this.getCell(column, row + 1)
-		];
+		neighborsLocations = cell.getNeighborsLocations(),
+		neighbors = neighborsLocations.map(neighbor => this.getCell(neighbor.column, neighbor.row));
 
 	// Filter the array with neighbors to remove all null objects, due to
 	// invalid locations, and cells which have already been visisted by the
