@@ -3,6 +3,20 @@
 \* ========================================================================== */
 
 /**
+ *
+ *
+ * @param {Array} array The multidimensional array to reduce to a single
+ *        dimensional array.
+ *
+ * @returns {Array}
+ */
+function flatten(array) {
+	return array.reduce(function (flat, toFlatten) {
+		return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
+	}, []);
+}
+
+/**
  * Returns a random integer within a specified range (inclusive).
  *
  * @param {Number} min The lowest value of the allowed range.
@@ -64,6 +78,7 @@ function isNilOrEmpty(value) {
 \* ========================================================================== */
 
 export {
+	flatten,
 	getRandomInt,
 	isNil,
 	isNilOrEmpty

@@ -3,6 +3,7 @@
 \* ========================================================================== */
 
 import {
+	flatten,
 	isNil,
 	isNilOrEmpty
 } from '../utilities/utilities.js';
@@ -251,6 +252,18 @@ class MazeVisualiser {
 	/**
 	 *
 	 *
+	 * @param {Array} cells
+	 *
+	 * @abstract
+	 * @memberof MazeVisualiser
+	 */
+	__displayMaze(cells) {
+		throw '__displayMaze must be implemented by the sub class';
+	}
+
+	/**
+	 *
+	 *
 	 * @param {Number} rows
 	 * @param {Number} columns
 	 *
@@ -261,10 +274,24 @@ class MazeVisualiser {
 		throw '__initVisualisation must be implemented by the sub class';
 	}
 
+	/**
+	 *
+	 * @abstract
+	 * @memberof MazeVisualiser
+	 */
 	__finalizeVisualisation() {
 		throw '__finalizeVisualisation must be implemented by the sub class';
 	}
 
+	/**
+	 *
+	 *
+	 * @param {any} historyRecord
+	 * @param {any} isLastRecord
+	 *
+	 * @abstract
+	 * @memberof MazeVisualiser
+	 */
 	__visualiseStep(historyRecord, isLastRecord) {
 		throw '__visualiseStep must be implemented by the sub class';
 	}
@@ -329,6 +356,20 @@ class MazeVisualiser {
 	/* ====================================================================== *\
 		PUBLIC METHODS
 	\* ====================================================================== */
+
+	displayMaze(maze, mazeConfiguration) {
+		this[propertyNames.stepIndex] = 0;
+		this[propertyNames.history] = null;
+		this[propertyNames.mazeConfiguration] = mazeConfiguration;
+
+		determineCellSize.call(this, mazeConfiguration.rows, mazeConfiguration.columns);
+
+		this.__initVisualisation(mazeConfiguration.rows, mazeConfiguration.columns);
+		this.__displayMaze(flatten(maze));
+		this.__finalizeVisualisation();
+
+		dispatchMazeVisualisationCompleted.call(this);
+	}
 
 	pause() {
 		if (this.runningState !== runningStates.running) {

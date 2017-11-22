@@ -206,11 +206,20 @@ class MazeVisualiserCanvas extends VisualiserBase {
 		OVERRIDDEN METHODS
 	\* ====================================================================== */
 
+	__displayMaze(cells) {
+		cells.forEach(cell => {
+			this[propertyNames.grid].setColorForCell(cell.column, cell.row, cell.activeWalls, 'white');
+		});
+	}
+
 	__finalizeVisualisation() {
-		const
-			pCell = this[propertyNames.previousRecord].cell,
-			pWalls = this[propertyNames.previousRecord].walls;
-		this[propertyNames.grid].setColorForCell(pCell.column, pCell.row, pWalls, 'white');
+		if (!isNil(this[propertyNames.previousRecord])) {
+			const
+				pCell = this[propertyNames.previousRecord].cell,
+				pWalls = this[propertyNames.previousRecord].walls;
+			this[propertyNames.grid].setColorForCell(pCell.column, pCell.row, pWalls, 'white');
+		}
+
 		showEntryAndExitCell.call(this);
 		this[propertyNames.grid].allowInteraction = true;
 	}

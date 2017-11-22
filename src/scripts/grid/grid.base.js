@@ -542,12 +542,6 @@ class Grid {
 		context.clearRect(0, 0, this[propertyNames.baseElement].width, this[propertyNames.baseElement].height);
 	}
 
-	drawGrid(gridCells) {
-		gridCells.forEach(row => row.forEach(cell => {
-			this.setColorForCell(cell.column, cell.row, cell.activeWalls, 'white');
-		}));
-	}
-
 	/**
 	 *
 	 *
