@@ -42,18 +42,17 @@ function isNilOrEmpty(value) {
 		return true;
 	}
 
+	if (value.hasOwnProperty('length') && value.length > 0) {
+		return false;
+	}
 	// Use "prop in value" instead of "value.hasOwnProperty(prop)", it is not
 	// important if the property comes from the prototype or not. In case of
 	// Map, "<Map>.hasOwnProperty(size)" fails but "size in <Map>" works.
-	if ('length' in value && value.length === 0) {
-		return true;
+	if ('size' in value && value.size > 0) {
+		return false;
 	}
 
-	if ('size' in value && value.size === 0) {
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 /* == PUBLIC API ============================================================ */
