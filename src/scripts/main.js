@@ -138,7 +138,7 @@ function createAndDisplayMaze(columns = defaultColumns, rows = defaultRows) {
 	if (selectedDrawOption.value === 'instantly') {
 		visualiser.displayMaze(myMaze.cells, getMazeConfiguration(columns, rows));
 	} else {
-		generateVisualMaze(rows, columns);
+		visualiser.setHistory(queue, getMazeConfiguration(columns, rows));
 		visualiser.run();
 	}
 }
@@ -151,15 +151,6 @@ function emptyQueue() {
 	while (queue.length > 0) {
 		queue.pop();
 	}
-}
-
-/**
- *
- * @param {Number} rows
- * @param {Number} columns
- */
-function generateVisualMaze(rows, columns) {
-	visualiser.setHistory(queue, getMazeConfiguration(columns, rows));
 }
 
 /**
