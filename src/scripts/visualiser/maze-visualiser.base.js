@@ -265,10 +265,6 @@ class MazeVisualiser {
 		throw '__finalizeVisualisation must be implemented by the sub class';
 	}
 
-	__setColorForCell(location, color) {
-		throw '__setColorForCell must be implemented by the sub class';
-	}
-
 	__visualiseStep(historyRecord, isLastRecord) {
 		throw '__visualiseStep must be implemented by the sub class';
 	}
@@ -350,10 +346,6 @@ class MazeVisualiser {
 
 		this[propertyNames.runningState] = runningStates.running;
 		autoProcessHistory.call(this);
-	}
-
-	setColorForCell(location, color) {
-		this.__setColorForCell(location, color);
 	}
 
 	setHistory(history, mazeConfiguration) {
