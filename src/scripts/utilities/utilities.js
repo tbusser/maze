@@ -3,12 +3,13 @@
 \* ========================================================================== */
 
 /**
- *
+ * Reduces a multidimensional array to a single dimensional array.
  *
  * @param {Array} array The multidimensional array to reduce to a single
  *        dimensional array.
  *
- * @returns {Array}
+ * @returns {Array} The method returns a single dimensional array with all the
+ *          items from the provided multidimensional array.
  */
 function flatten(array) {
 	return array.reduce(function (flat, toFlatten) {
