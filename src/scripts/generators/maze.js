@@ -186,8 +186,6 @@ function getCellsForRow(row) {
  */
 function getUnvisitedNeighbors(cell) {
 	const
-		// Get the location of the provided cell.
-		{ column, row } = cell.location,
 		// Get the neighboring cells. Don't worry about creating invalid
 		// locations, getCell will just return null for invalid locations.
 		neighborsLocations = cell.getNeighborsLocations(),
