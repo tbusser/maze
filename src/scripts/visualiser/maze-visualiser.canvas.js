@@ -135,6 +135,7 @@ function markCellAsEntryExit(cell, isEntry) {
 		) {
 			const
 				text = getSymbolForSide(side, isEntry);
+			this[propertyNames.grid].setColorForCell(cell.column, cell.row, cell.activeWalls, 'white');
 			this[propertyNames.grid].setTextForCell(cell.column, cell.row, text);
 		}
 	}
