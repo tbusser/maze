@@ -65,25 +65,14 @@ function getLongestPathForCell(startCell, mazeCells) {
 			length: -Infinity
 		};
 
-	// console.log('Determining longest path for cell: ', cell);
-
 	while (cell != null) {
-		// stack.push(cell);
-		// visitedCells.add(getKeyForCell(cell));
 		visitedCells.add(getKeyForCell(cell));
 
-		// console.group('step');
-		// console.log(`Evaluating cell ${getKeyForCell(cell)}, current stack: `, stack.reduce((total, item) => {
-		// 	total += getKeyForCell(item) + ', ';
-		// 	return total;
-		// }, ''));
 		const
 			nextCellLocation = getRandomUnvisitedNeighbor.call(this, cell, mazeCells, visitedCells);
 
 		if (nextCellLocation === null) {
-			// console.log('No unvisited neighbors found');
 			if (stack.length > longestPath.length && cell.outerWalls !== 0) {
-				// console.log(`Found a longest path to ${getKeyForCell(cell)} of length ${stack.length + 1}`);
 				longestPath = {
 					cell,
 					location: cell.location,
@@ -91,24 +80,15 @@ function getLongestPathForCell(startCell, mazeCells) {
 				};
 			}
 			cell = stack.pop();
-			// if (cell != null) {
-			// 	console.log('Backtracking to cell ', getKeyForCell(cell));
-			// } else {
-			// 	console.log('There are no more cells on the stack');
-			// }
-			// console.groupEnd();
 			continue;
 		}
 
-		// console.log('Next random cell ', getKeyForCell(nextCellLocation));
 		const
 			nextCell = mazeCells[nextCellLocation.row][nextCellLocation.column];
 		stack.push(cell);
 		cell = nextCell;
-		// console.groupEnd();
 	}
 
-	// console.log(`The longest path from ${getKeyForCell(startCell)} is to ${getKeyForCell(longestPath.location)} with a length of ${longestPath.length}`);
 	return longestPath;
 }
 
