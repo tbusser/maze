@@ -9,7 +9,11 @@ import {
 
 /* == IMPORTS =============================================================== */
 
-
+/**
+ * @typedef {Location}
+ * @property {Number} column
+ * @property {Number} row
+ */
 
 /* ========================================================================== *\
 	PRIVATE VARIABLES
@@ -110,7 +114,10 @@ function getOuterCells(cells) {
  *
  *
  * @param {Cell} cell
+ * @param {Array} maze
  * @param {Set} visitedCells
+ *
+ * @returns {Location}
  *
  * @private
  * @memberof LongestPath
@@ -118,7 +125,12 @@ function getOuterCells(cells) {
 function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 	const
 		{ columns, rows } = this[propertyNames.mazeDimensions],
+		// Get a list of all potential neighbors for the provided cell. This may
+		// include locations that fall outside of the grid.
 		locations = cell.getNeighborsLocations(),
+		// Filter the locations to remove all locations which:
+		// - Fall outside of the grid;
+		// - Have already been visited.
 		validLocations = locations.filter(location => {
 			const
 				{column, row } = location;
@@ -129,13 +141,18 @@ function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 				!visitedCells.has(getKeyForCell(location))
 			)
 		}),
+		// Now that we have an array with just valid locations for unvisited
+		// cells we need to take the last step, remove all the locations that
+		// have no path to the provided cell.
 		validCells = validLocations.filter(location => {
 			const
 				candidate = maze[location.row][location.column];
 
 			return cell.hasPathTo(candidate);
-		})
+		});
 
+	// When there are no valid neighbors, return null. In case there is just a
+	// single valid neighbor, return it.
 	if (validCells.length === 0) {
 		return null;
 	} else if (validCells.length === 1) {
@@ -143,8 +160,10 @@ function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 	}
 
 	const
+		// Determine a random index for the array of valid cells.
 		randomIndex = getRandomInt(0, validCells.length - 1);
 
+	// Return the location for the randomly determined index.
 	return validCells[randomIndex];
 }
 
@@ -208,10 +227,9 @@ class LongestPathFinder {
 		performance.measure(performanceInfo.name, performanceInfo.start, performanceInfo.end);
 
 		const
-			entries = performance.getEntriesByName(performanceInfo.name),
-			duration = (entries[0].duration / 1000).toFixed(3);
+			entries = performance.getEntriesByName(performanceInfo.name);
 
-		console.log('The longest path is: ', longestLongestPath, 'Time it took:', duration + ' seconds');
+		longestLongestPath.duration = entries[0].duration;
 
 		performance.clearMarks();
 		performance.clearMeasures();
