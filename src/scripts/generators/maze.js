@@ -6,6 +6,7 @@ import {
 	getRandomInt
 } from '../utilities/utilities.js';
 
+import LongestPathSolver from '../solvers/longest-path.js';
 import MazeCell from '../cell.js';
 
 /* == IMPORTS =============================================================== */
@@ -117,6 +118,29 @@ function dispatchStepTaken(cell) {
 /**
  *
  *
+ * @private
+ * @memberof Maze
+ */
+function findEntryAndExit() {
+	const
+		solver = new LongestPathSolver(),
+		longestPath = solver.solve(this),
+		entryLocation = longestPath.fromCell,
+		exitLocation = longestPath.toCell,
+		entryCell = this.getCell(entryLocation.column, entryLocation.row),
+		exitCell = this.getCell(exitLocation.column, exitLocation.row);
+
+	entryCell.removeRandomOuterWall();
+	exitCell.removeRandomOuterWall();
+
+	this[propertyNames.entryCell] = entryCell;
+	this[propertyNames.exitCell] = exitCell;
+}
+
+
+/**
+ *
+ *
  * @param {any} cell
  */
 function getCandidatesForNextPath() {
@@ -142,34 +166,6 @@ function getCandidatesForNextPath() {
 	}
 
 	return unvisitedNeighbors;
-}
-
-/**
- *
- *
- * @param {Number} column
- * @returns {Array}
- */
-function getCellsForColumn(column) {
-	if (column < 0 || column >= this.columns) {
-		return [];
-	}
-
-	return this[propertyNames.cells].map(rowCells => rowCells[column]);
-}
-
-/**
- *
- *
- * @param {Number} row
- * @returns {Array}
- */
-function getCellsForRow(row) {
-	if (row < 0 || row >= this.rows) {
-		return [];
-	}
-
-	return this[propertyNames.cells][row];
 }
 
 /**
@@ -288,9 +284,10 @@ class Maze {
 			return null;
 		}
 
-		return this[propertyNames.exitCell].cell;
+		return this[propertyNames.exitCell];
 	}
 	/* -- exitCell (read-only) ---------- */
+
 
 	/* ---------------------------------- *\
 		rows (read-only)
@@ -327,30 +324,6 @@ class Maze {
 		PUBLIC METHODS
 	\* ====================================================================== */
 	/**
-	 *
-	 *
-	 * @param {any} cell
-	 * @memberof Maze
-	 */
-	checkForExit(cell) {
-		if (cell.outerWalls === MazeCell.sides.none) {
-			return;
-		}
-
-		if (
-			this[propertyNames.exitCell] != null &&
-			this[propertyNames.exitCell].length >= this[propertyNames.queue].length
-		) {
-			return;
-		}
-
-		this[propertyNames.exitCell] = {
-			cell: cell,
-			length: this[propertyNames.queue].length
-		}
-	}
-
-	/**
 	 * Returns the cell for the specified location.
 	 *
 	 * @param {Number} x The column for the cell to return.
@@ -376,35 +349,10 @@ class Maze {
 
 	getRandomStartCell() {
 		const
-			randomSide = getRandomInt(0, 3);
-		let
-			cells;
+			randomColumn = getRandomInt(0, this.columns - 1),
+			randomRow = getRandomInt(0, this.rows - 1);
 
-		switch (randomSide) {
-		case 0:
-			cells = getCellsForRow.call(this, 0);
-			break;
-		case 1:
-			cells = getCellsForColumn.call(this, this.columns - 1);
-			break;
-		case 2:
-			cells = getCellsForRow.call(this, this.rows - 1);
-			break;
-		case 3:
-			cells = getCellsForColumn.call(this, 0);
-			break;
-		}
-
-		const
-			randomIndex = getRandomInt(0, cells.length - 1),
-			randomCell = cells[randomIndex];
-
-		randomCell.removeRandomOuterWall();
-		randomCell.isEntryOrExit = true;
-
-		this[propertyNames.entryCell] = randomCell;
-
-		return randomCell;
+		return this.getCell(randomColumn, randomRow);
 	}
 
 	/**
@@ -434,7 +382,6 @@ class Maze {
 		while (this[propertyNames.currentCell] != null) {
 			this[propertyNames.currentCell].order = counter++;
 			this[propertyNames.currentCell].markAsVisited();
-			this.checkForExit(this[propertyNames.currentCell]);
 
 			const
 				candidates = getCandidatesForNextPath.call(this);
@@ -457,10 +404,7 @@ class Maze {
 			this[propertyNames.currentCell] = nextCell;
 		}
 
-		// logCells.call(this);
-		this[propertyNames.exitCell].cell.removeRandomOuterWall();
-		this[propertyNames.exitCell].cell.isEntryOrExit = true;
-		dispatchStepTaken.call(this, this[propertyNames.exitCell].cell);
+		findEntryAndExit.call(this);
 	}
 
 	/* == PUBLIC METHODS ==================================================== */
