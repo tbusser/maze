@@ -24,12 +24,10 @@ const
 
 	propertyNames = {
 		cells: Symbol('cells'),
-		currentCell: Symbol('currentCell'),
 		entryCell: Symbol('entryCell'),
 		eventElement: Symbol('eventElement'),
 		exitCell: Symbol('exitCell'),
-		matrixSize: Symbol('matrixSize'),
-		queue: Symbol('queue')
+		matrixSize: Symbol('matrixSize')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -108,9 +106,10 @@ function dispatchEvent(eventElement, eventName, data = null) {
  *
  * @param {any} cell
  */
-function dispatchStepTaken(cell) {
+function dispatchStepTaken(cell, state = 'discovery') {
 	dispatchEvent(this[propertyNames.eventElement], eventNames.stepTaken, {
-		cell: cell,
+		cell,
+		state,
 		walls: cell.activeWalls
 	});
 }
@@ -137,62 +136,50 @@ function findEntryAndExit() {
 	this[propertyNames.exitCell] = exitCell;
 }
 
-
 /**
  *
  *
- * @param {any} cell
+ * @param {any} {column, row}
+ *
+ * @returns
  */
-function getCandidatesForNextPath() {
-	let
-		firstBacktrack = true,
-		unvisitedNeighbors = [];
-
-	// Keep getting unvisited neighbors as long as we have a current cell and
-	// there are no unvisited neighboring cells.
-	while (this[propertyNames.currentCell] != null && unvisitedNeighbors.length === 0) {
-		// Get the unvisited neighbors for the current cell.
-		unvisitedNeighbors = getUnvisitedNeighbors.call(this, this[propertyNames.currentCell]);
-		if (unvisitedNeighbors.length > 0) {
-			break;
-		}
-
-		dispatchStepTaken.call(this, this[propertyNames.currentCell]);
-		if (firstBacktrack) {
-			firstBacktrack = false;
-			dispatchStepTaken.call(this, this[propertyNames.currentCell]);
-		}
-		this[propertyNames.currentCell] = this[propertyNames.queue].pop();
-	}
-
-	return unvisitedNeighbors;
+function getKeyForCell({column, row}) {
+	return `${ column }_${ row }`;
 }
 
 /**
- * Returns an array with the neighbors of the specified cell which haven't
- * yet been visited by the maze generator.
  *
- * @param {MazeCell} cell
- * @returns {Array} An array with unvisited neighbors of the provided cell,
- *          when all neighbors have been visited the result will be an empty
- *          array.
  *
- * @private
- * @memberof Maze
+ * @param {Cell} cell
+ * @param {Set} visitedCells
  */
-function getUnvisitedNeighbors(cell) {
+function getRandomUnvisitedLocation(cell, visitedCells) {
 	const
 		// Get the neighboring cells. Don't worry about creating invalid
 		// locations, getCell will just return null for invalid locations.
 		neighborsLocations = cell.getNeighborsLocations(),
-		neighbors = neighborsLocations.map(neighbor => this.getCell(neighbor.column, neighbor.row));
+		validLocations = neighborsLocations.filter(location => {
+			const
+				{ column, row } = location;
 
-	// Filter the array with neighbors to remove all null objects, due to
-	// invalid locations, and cells which have already been visisted by the
-	// maze generator.
-	return neighbors.filter(neighbor => (neighbor != null) && !neighbor.isVisited);
+			return (
+				(column >= 0 && column < this.columns) &&
+				(row >= 0 && row < this.rows) &&
+				!visitedCells.has(getKeyForCell(location))
+			);
+		});
+
+	if (validLocations.length === 0) {
+		return null;
+	} else if (validLocations.length === 1) {
+		return validLocations[0];
+	}
+
+	const
+		randomIndex = getRandomInt(0, validLocations.length - 1);
+
+	return validLocations[randomIndex];
 }
-
 
 /**
  * Method which can be used for debugging maze creation. It will log a table to
@@ -368,40 +355,38 @@ class Maze {
 			rows
 		};
 
+		this[propertyNames.entryCell] = null;
+		this[propertyNames.exitCell] = null;
+
 		this[propertyNames.cells] = createMatrix.call(this, (x, y) => createMazeCell.call(this, x, y));
 
 		const
+			visitedCells = new Set(),
 			stack = [];
-		this[propertyNames.queue] = stack;
-		this[propertyNames.exitCell] = null;
 
-		this[propertyNames.currentCell] = this.getRandomStartCell();
 		let
-			counter = 0;
+			cell = this.getRandomStartCell();
 
-		while (this[propertyNames.currentCell] != null) {
-			this[propertyNames.currentCell].order = counter++;
-			this[propertyNames.currentCell].markAsVisited();
+		while (cell != null) {
+			visitedCells.add(getKeyForCell(cell));
 
 			const
-				candidates = getCandidatesForNextPath.call(this);
+				nextCellLocation = getRandomUnvisitedLocation.call(this, cell, visitedCells);
 
-			// When there are no more candidates, there is nothing else to do in
-			// this iteration of the while.
-			if (candidates.length === 0) {
+			if (nextCellLocation === null) {
+				dispatchStepTaken.call(this, cell, 'backtrack');
+				cell = stack.pop();
+
 				continue;
 			}
 
-			stack.push(this[propertyNames.currentCell]);
+			stack.push(cell);
 			const
-				randomIndex = getRandomInt(0, candidates.length - 1),
-				nextCell = candidates[randomIndex];
+				nextCell = this.getCell(nextCellLocation.column, nextCellLocation.row);
 
-			this[propertyNames.currentCell].createPathTo(nextCell);
-
-			dispatchStepTaken.call(this, this[propertyNames.currentCell]);
-
-			this[propertyNames.currentCell] = nextCell;
+			cell.createPathTo(nextCell);
+			dispatchStepTaken.call(this, cell);
+			cell = nextCell;
 		}
 
 		findEntryAndExit.call(this);

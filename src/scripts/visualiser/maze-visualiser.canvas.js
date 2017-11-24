@@ -249,10 +249,13 @@ class MazeVisualiserCanvas extends VisualiserBase {
 			{ cell, walls } = historyRecord,
 			cellKey = getKeyForCell(cell),
 			hasKey = this[propertyNames.cells].has(cellKey),
-			fromColor = (hasKey) ? 'blue' : 'white';
+			fromColor = (hasKey) ? 'blue' : 'white',
+			toColor = (hasKey || historyRecord.state === 'backtrack')
+				? 'white'
+				: 'blue';
 
 		this[propertyNames.cells].set(cellKey, {
-			color: (hasKey) ? 'white' : 'blue'
+			color: toColor
 		});
 		this[propertyNames.grid].setColorForCellAnimated(cell.column, cell.row, walls, fromColor, 'red');
 	}
