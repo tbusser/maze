@@ -21,9 +21,16 @@ import {
 
 const
 	performanceInfo = {
-		end: 'longest-path-end',
-		name: 'longest-path',
-		start: 'longest-path-start'
+		discovery: {
+			end: 'lp-discovery-end',
+			name: 'lp-discovery',
+			start: 'lp-discovery-start'
+		},
+		overall: {
+			end: 'lp-overall-end',
+			name: 'lp-overall',
+			start: 'lp-overall-start'
+		}
 	},
 
 	propertyNames = {
@@ -37,6 +44,15 @@ const
 /* ========================================================================== *\
 	PRIVATE METHODS
 \* ========================================================================== */
+
+/**
+ *
+ *
+ */
+function clearPerformanceData() {
+	performance.clearMarks();
+	performance.clearMeasures();
+}
 
 /**
  *
@@ -69,6 +85,7 @@ function getLongestPathForCell(startCell, mazeCells) {
 			length: -Infinity
 		};
 
+	performance.mark(performanceInfo.discovery.start);
 	while (cell != null) {
 		visitedCells.add(getKeyForCell(cell));
 
@@ -93,6 +110,8 @@ function getLongestPathForCell(startCell, mazeCells) {
 		cell = nextCell;
 	}
 
+	performance.mark(performanceInfo.discovery.end);
+	performance.measure(performanceInfo.discovery.name, performanceInfo.discovery.start, performanceInfo.discovery.end);
 	return longestPath;
 }
 
@@ -177,6 +196,31 @@ function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 
 class LongestPathFinder {
 	/* ====================================================================== *\
+		INSTANCE PROPERTIES
+	\* ====================================================================== */
+
+	/* ---------------------------------- *\
+		discoveryDurations (read-only)
+	\* ---------------------------------- */
+	get discoveryDurations() {
+		return performance.getEntriesByName(performanceInfo.discovery.name);
+	}
+	/* -- discoveryDurations (read-only)  */
+
+
+	/* ---------------------------------- *\
+		overallDuration (read-only)
+	\* ---------------------------------- */
+	get overallDuration() {
+		return performance.getEntriesByName(performanceInfo.overall.name);
+	}
+	/* -- overallDuration (read-only) --- */
+
+	/* == INSTANCE PROPERTIES =============================================== */
+
+
+
+	/* ====================================================================== *\
 		PUBLIC METHODS
 	\* ====================================================================== */
 
@@ -192,6 +236,8 @@ class LongestPathFinder {
 			rows: maze.cells.length
 		};
 
+		clearPerformanceData();
+
 		const
 			outerCells = new Set(getOuterCells(maze.cells));
 
@@ -202,7 +248,7 @@ class LongestPathFinder {
 				length: -Infinity
 			};
 
-		performance.mark(performanceInfo.start);
+		performance.mark(performanceInfo.overall.start);
 
 		while (outerCells.size > 0) {
 			const
@@ -223,16 +269,8 @@ class LongestPathFinder {
 			outerCells.delete(longestPath.cell);
 		}
 
-		performance.mark(performanceInfo.end);
-		performance.measure(performanceInfo.name, performanceInfo.start, performanceInfo.end);
-
-		const
-			entries = performance.getEntriesByName(performanceInfo.name);
-
-		longestLongestPath.duration = entries[0].duration;
-
-		performance.clearMarks();
-		performance.clearMeasures();
+		performance.mark(performanceInfo.overall.end);
+		performance.measure(performanceInfo.overall.name, performanceInfo.overall.start, performanceInfo.overall.end);
 
 		return longestLongestPath;
 	}
