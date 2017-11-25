@@ -52,7 +52,6 @@ const
 
 const
 	propertyNames = {
-		isVisited: Symbol('isVisited'),
 		outerWalls: Symbol('outerWalls'),
 		walls: Symbol('walls'),
 		column: Symbol('column'),
@@ -158,7 +157,6 @@ class Cell {
 	constructor(x, y) {
 		this[propertyNames.column] = x;
 		this[propertyNames.row] = y;
-		this[propertyNames.isVisited] = false;
 		this[propertyNames.outerWalls] = sides.none;
 		this[propertyNames.walls] = sides.bottom | sides.left | sides.right | sides.top;
 	}
@@ -233,21 +231,23 @@ class Cell {
 
 
 	/* ---------------------------------- *\
-		isVisited (read-only)
+		numberOfNeighbors (read-only)
 	\* ---------------------------------- */
-	/**
-	 * By default this property is false. It will return true after the method
-	 * to mark the cell as visited has been called at least once.
-	 *
-	 * @type {Boolean}
-	 * @readonly
-	 * @memberof Cell
-	 */
-	get isVisited() {
-		return this[propertyNames.isVisited];
-	}
-	/* -- isVisited (read-only) --------- */
+	get numberOfNeighbors() {
+		let
+			count = 0;
+		for (let key in sides) {
+			if (
+				(this.activeWalls & sides[key]) === 0 &&
+				key !== 'none'
+			) {
+				count++;
+			}
+		}
 
+		return count;
+	}
+	/* -- numberOfNeighbors (read-only) - */
 
 	/* ---------------------------------- *\
 		outerWalls (read-only)
@@ -378,15 +378,6 @@ class Cell {
 			(areVerticalNeighbors && columnDifference === 0) ||
 			(areHorizontalNeighbors && rowDifference === 0)
 		)
-	}
-
-	/**
-	 * Marks the cell as visited.
-	 *
-	 * @memberof Cell
-	 */
-	markAsVisited() {
-		this[propertyNames.isVisited] = true;
 	}
 
 	/**
