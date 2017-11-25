@@ -121,9 +121,18 @@ function dispatchStepTaken(cell, state = 'discovery') {
  * @memberof Maze
  */
 function findEntryAndExit() {
+	console.clear();
 	const
 		solver = new LongestPathSolver(),
-		longestPath = solver.solve(this),
+		longestPath = solver.solve(this);
+
+	console.group('Duration non-optimized');
+	console.log('Duration per discovery attempt: ', solver.discoveryDurations);
+	console.log('Duration for finding longest path: ', solver.overallDuration[0].duration);
+	console.groupEnd();
+
+	const
+		longestPathOptimized = solver.solve(this, true),
 		entryLocation = longestPath.fromCell,
 		exitLocation = longestPath.toCell,
 		entryCell = this.getCell(entryLocation.column, entryLocation.row),
@@ -134,6 +143,32 @@ function findEntryAndExit() {
 
 	this[propertyNames.entryCell] = entryCell;
 	this[propertyNames.exitCell] = exitCell;
+
+	if (
+		(getKeyForCell(longestPath.fromCell) !== getKeyForCell(longestPathOptimized.fromCell)) ||
+		(getKeyForCell(longestPath.toCell) !== getKeyForCell(longestPathOptimized.toCell))
+	) {
+		console.group();
+		if (longestPath.length === longestPathOptimized.length) {
+			console.warn('Both solutions returned a different path but of equal length.');
+		} else {
+			console.error('Optimized solution didn\'t yield same longest path as non-optimized solution');
+		}
+
+		console.log('Non-optimized: ', longestPath.fromCell, longestPath.toCell, longestPath.length);
+		try {
+			console.log('Optimized: ', longestPathOptimized.fromCell, longestPathOptimized.toCell, longestPathOptimized.length);
+		} catch (error) {
+			console.error('Error printing stats for optimized solution.', longestPathOptimized, error);
+		}
+		console.groupEnd();
+	} else {
+		console.log('Both solution found a path from ', longestPathOptimized.fromCell, ' to ', longestPathOptimized.toCell, ` with a length of ${longestPath.length}`);
+	}
+	console.group('Duration optimized');
+	console.log('Duration per discovery attempt (optimized): ', solver.discoveryDurations);
+	console.log('Duration for finding longest path (optimized): ', solver.overallDuration[0].duration);
+	console.groupEnd();
 }
 
 /**

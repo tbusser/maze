@@ -34,7 +34,8 @@ const
 	},
 
 	propertyNames = {
-		mazeDimensions: Symbol('mazeDimension')
+		mazeDimensions: Symbol('mazeDimension'),
+		outerCells: Symbol('outerCells')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -73,7 +74,8 @@ function getKeyForCell({column, row}) {
  * @private
  * @memberof LongestPath
  */
-function getLongestPathForCell(startCell, mazeCells) {
+// eslint-disable-next-line complexity, require-jsdoc
+function getLongestPathForCell(startCell, mazeCells, optimized = false) {
 	const
 		visitedCells = new Set(),
 		stack = [];
@@ -83,7 +85,8 @@ function getLongestPathForCell(startCell, mazeCells) {
 		longestPath = {
 			location: null,
 			length: -Infinity
-		};
+		},
+		longestStack = [];
 
 	performance.mark(performanceInfo.discovery.start);
 	while (cell != null) {
@@ -99,6 +102,7 @@ function getLongestPathForCell(startCell, mazeCells) {
 					location: cell.location,
 					length: stack.length
 				};
+				longestStack = stack.slice(0);
 			}
 			cell = stack.pop();
 			continue;
@@ -110,10 +114,38 @@ function getLongestPathForCell(startCell, mazeCells) {
 		cell = nextCell;
 	}
 
+	if (optimized) {
+		// console.groupCollapsed('Pruning outer cells');
+		for (let index = 0; index < longestStack.length; index++) {
+			const
+				cell = longestStack[index];
+			if (
+				cell.outerWalls !== 0 &&
+				cell.numberOfNeighbors === 2 &&
+				this[propertyNames.outerCells].has(cell)
+			) {
+				// console.log('Removing cell from set of outer cells', cell.location);
+				this[propertyNames.outerCells].delete(cell);
+			}
+		}
+		// console.groupEnd();
+	}
 	performance.mark(performanceInfo.discovery.end);
 	performance.measure(performanceInfo.discovery.name, performanceInfo.discovery.start, performanceInfo.discovery.end);
+
 	return longestPath;
 }
+
+// longestStack.forEach(cell => {
+// 	if (
+// 		cell.outerWalls !== 0 &&
+// 		cell.numberOfNeighbors === 2 &&
+// 		this[propertyNames.outerCells].has(cell)
+// 	) {
+// 		// console.log('Removing cell because it is on the outside and has only 2 neighbors.', cell);
+// 		this[propertyNames.outerCells].delete(cell);
+// 	}
+// });
 
 /**
  *
@@ -230,7 +262,7 @@ class LongestPathFinder {
 	 * @param {Maze} maze
 	 * @memberof LongestPathFinder
 	 */
-	solve(maze) {
+	solve(maze, optimized) {
 		this[propertyNames.mazeDimensions] = {
 			columns: maze.cells[0].length,
 			rows: maze.cells.length
@@ -238,8 +270,10 @@ class LongestPathFinder {
 
 		clearPerformanceData();
 
+		this[propertyNames.outerCells] = new Set(getOuterCells(maze.cells));
+
 		const
-			outerCells = new Set(getOuterCells(maze.cells));
+			outerCells = this[propertyNames.outerCells];
 
 		let
 			longestLongestPath = {
@@ -255,7 +289,9 @@ class LongestPathFinder {
 				cells = outerCells.values(),
 				firstLocation = cells.next().value,
 				firstCell = maze.cells[firstLocation.row][firstLocation.column],
-				longestPath = getLongestPathForCell.call(this, firstCell, maze.cells);
+				longestPath = getLongestPathForCell.call(this, firstCell, maze.cells, optimized);
+
+			// console.log(firstCell.location, ' -> ', longestPath.location, ` has length ${longestPath.length}`);
 
 			if (longestPath.length > longestLongestPath.length) {
 				longestLongestPath = {
@@ -266,12 +302,13 @@ class LongestPathFinder {
 			}
 
 			outerCells.delete(firstLocation);
-			outerCells.delete(longestPath.cell);
+			// outerCells.delete(longestPath.cell);
 		}
 
 		performance.mark(performanceInfo.overall.end);
 		performance.measure(performanceInfo.overall.name, performanceInfo.overall.start, performanceInfo.overall.end);
 
+		console.log('Longest found path: ', longestLongestPath);
 		return longestLongestPath;
 	}
 
