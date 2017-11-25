@@ -34,7 +34,8 @@ const
 	},
 
 	propertyNames = {
-		mazeDimensions: Symbol('mazeDimension')
+		mazeDimensions: Symbol('mazeDimension'),
+		outerCells: Symbol('outerCells')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -73,7 +74,8 @@ function getKeyForCell({column, row}) {
  * @private
  * @memberof LongestPath
  */
-function getLongestPathForCell(startCell, mazeCells) {
+// eslint-disable-next-line complexity, require-jsdoc
+function getLongestPathForCell(startCell, mazeCells, optimized = false) {
 	const
 		visitedCells = new Set(),
 		stack = [];
@@ -83,7 +85,8 @@ function getLongestPathForCell(startCell, mazeCells) {
 		longestPath = {
 			location: null,
 			length: -Infinity
-		};
+		},
+		longestStack = [];
 
 	performance.mark(performanceInfo.discovery.start);
 	while (cell != null) {
@@ -99,6 +102,7 @@ function getLongestPathForCell(startCell, mazeCells) {
 					location: cell.location,
 					length: stack.length
 				};
+				longestStack = stack.slice(0);
 			}
 			cell = stack.pop();
 			continue;
@@ -110,8 +114,25 @@ function getLongestPathForCell(startCell, mazeCells) {
 		cell = nextCell;
 	}
 
+	// Iterate over all the cells in the longest path.
+	for (let index = 0; index < longestStack.length; index++) {
+		const
+			cell = longestStack[index];
+		// When the cell has an outer wall, exactly 2 neighbors, and is still in
+		// the set of cells to determine the longest path for it can be removed
+		// from the set.
+		if (
+			cell.outerWalls !== 0 &&
+			cell.numberOfNeighbors === 2 &&
+			this[propertyNames.outerCells].has(cell)
+		) {
+			this[propertyNames.outerCells].delete(cell);
+		}
+	}
+
 	performance.mark(performanceInfo.discovery.end);
 	performance.measure(performanceInfo.discovery.name, performanceInfo.discovery.start, performanceInfo.discovery.end);
+
 	return longestPath;
 }
 
@@ -238,8 +259,10 @@ class LongestPathFinder {
 
 		clearPerformanceData();
 
+		this[propertyNames.outerCells] = new Set(getOuterCells(maze.cells));
+
 		const
-			outerCells = new Set(getOuterCells(maze.cells));
+			outerCells = this[propertyNames.outerCells];
 
 		let
 			longestLongestPath = {
@@ -266,7 +289,6 @@ class LongestPathFinder {
 			}
 
 			outerCells.delete(firstLocation);
-			outerCells.delete(longestPath.cell);
 		}
 
 		performance.mark(performanceInfo.overall.end);
