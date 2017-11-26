@@ -52,10 +52,11 @@ const
 
 const
 	propertyNames = {
-		outerWalls: Symbol('outerWalls'),
-		walls: Symbol('walls'),
 		column: Symbol('column'),
-		row: Symbol('row')
+		outerWalls: Symbol('outerWalls'),
+		paths: Symbol('paths'),
+		row: Symbol('row'),
+		walls: Symbol('walls')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -141,6 +142,36 @@ function hasWall(side) {
  */
 function removeWall(side) {
 	this[propertyNames.walls] ^= side;
+
+	switch (side) {
+	case sides.bottom:
+		this.paths.push({
+			column: this.column,
+			row: this.row + 1
+		});
+		break;
+
+	case sides.left:
+		this.paths.push({
+			column: this.column - 1,
+			row: this.row
+		});
+		break;
+
+	case sides.right:
+		this.paths.push({
+			column: this.column + 1,
+			row: this.row
+		});
+		break;
+
+	case sides.top:
+		this.paths.push({
+			column: this.column,
+			row: this.row - 1
+		});
+		break;
+	}
 }
 
 /* == PRIVATE METHODS ======================================================= */
@@ -159,6 +190,7 @@ class Cell {
 		this[propertyNames.row] = y;
 		this[propertyNames.outerWalls] = sides.none;
 		this[propertyNames.walls] = sides.bottom | sides.left | sides.right | sides.top;
+		this[propertyNames.paths] = [];
 	}
 	/* == CONSTRUCTOR ======================================================= */
 
@@ -212,6 +244,15 @@ class Cell {
 
 
 	/* ---------------------------------- *\
+		id (read-only)
+	\* ---------------------------------- */
+	get id() {
+		return `${ this.column }_${ this.row }`
+	}
+	/* -- id (read-only) ---------- */
+
+
+	/* ---------------------------------- *\
 		location (read-only)
 	\* ---------------------------------- */
 	/**
@@ -231,23 +272,22 @@ class Cell {
 
 
 	/* ---------------------------------- *\
+		paths (read-only)
+	\* ---------------------------------- */
+	get paths() {
+		return this[propertyNames.paths];
+	}
+	/* -- paths (read-only) ------------- */
+
+
+	/* ---------------------------------- *\
 		numberOfNeighbors (read-only)
 	\* ---------------------------------- */
 	get numberOfNeighbors() {
-		let
-			count = 0;
-		for (let key in sides) {
-			if (
-				(this.activeWalls & sides[key]) === 0 &&
-				key !== 'none'
-			) {
-				count++;
-			}
-		}
-
-		return count;
+		return this.paths.length;
 	}
 	/* -- numberOfNeighbors (read-only) - */
+
 
 	/* ---------------------------------- *\
 		outerWalls (read-only)
@@ -323,10 +363,22 @@ class Cell {
 	 */
 	getNeighborsLocations() {
 		return [
-			{ column: this.column - 1, row: this.row},
-			{ column: this.column + 1, row: this.row},
-			{ column: this.column, row: this.row - 1},
-			{ column: this.column, row: this.row + 1}
+			{
+				column: this.column - 1,
+				row: this.row
+			},
+			{
+				column: this.column + 1,
+				row: this.row
+			},
+			{
+				column: this.column,
+				row: this.row - 1
+			},
+			{
+				column: this.column,
+				row: this.row + 1
+			}
 		];
 	}
 

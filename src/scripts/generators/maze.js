@@ -349,7 +349,7 @@ class Maze {
 	 * @param {any} [rows=this.rows]
 	 * @memberof Maze
 	 */
-	generateMaze(columns = this.columns, rows = this.rows) {
+	generateMaze(columns = this.columns, rows = this.rows, skipEntryExit = false) {
 		this[propertyNames.matrixSize] = {
 			columns,
 			rows
@@ -389,7 +389,28 @@ class Maze {
 			cell = nextCell;
 		}
 
-		findEntryAndExit.call(this);
+		if (!skipEntryExit) {
+			findEntryAndExit.call(this);
+		}
+	}
+
+	getSerializableMaze() {
+		const
+			result = [];
+
+		this.cells.forEach(row => {
+			result.push(row.map(cell => {
+				return {
+					id: cell.id,
+					location: cell.location,
+					numberOfNeighbors: cell.numberOfNeighbors,
+					outerWalls: cell.outerWalls,
+					paths: cell.paths
+				}
+			}));
+		});
+
+		return result;
 	}
 
 	/* == PUBLIC METHODS ==================================================== */
