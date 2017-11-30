@@ -134,13 +134,15 @@ function createAndDisplayMaze(columns = defaultColumns, rows = defaultRows) {
 		selectedDrawOption = document.querySelector('[name="draw-options"]:checked');
 	emptyQueue();
 	interactivePathController.stop();
-	myMaze.generateMaze(columns, rows);
-	if (selectedDrawOption.value === 'instantly') {
-		visualiser.displayMaze(myMaze.cells, getMazeConfiguration(columns, rows));
-	} else {
-		visualiser.setHistory(queue, getMazeConfiguration(columns, rows));
-		visualiser.run();
-	}
+	myMaze.generateMaze(columns, rows)
+		.then(() => {
+			if (selectedDrawOption.value === 'instantly') {
+				visualiser.displayMaze(myMaze.cells, getMazeConfiguration(columns, rows));
+			} else {
+				visualiser.setHistory(queue, getMazeConfiguration(columns, rows));
+				visualiser.run();
+			}
+		});
 }
 
 /**

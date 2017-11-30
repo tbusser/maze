@@ -2,11 +2,13 @@
 	IMPORTS
 \* ========================================================================== */
 
+import Deferred from '../utilities/deferred.js';
+
 import {
 	getRandomInt
 } from '../utilities/utilities.js';
 
-import LongestPathSolver from '../solvers/longest-path.js';
+import LongestPathSolver from '../solvers/longest-path-single-thread.js';
 import MazeCell from '../cell.js';
 
 /* == IMPORTS =============================================================== */
@@ -121,19 +123,27 @@ function dispatchStepTaken(cell, state = 'discovery') {
  * @memberof Maze
  */
 function findEntryAndExit() {
-	const
-		solver = new LongestPathSolver(),
-		longestPath = solver.solve(this),
-		entryLocation = longestPath.fromCell,
-		exitLocation = longestPath.toCell,
-		entryCell = this.getCell(entryLocation.column, entryLocation.row),
-		exitCell = this.getCell(exitLocation.column, exitLocation.row);
+	return new Promise(resolve => {
+		const
+			solver = new LongestPathSolver();
 
-	entryCell.removeRandomOuterWall();
-	exitCell.removeRandomOuterWall();
+		solver.solve(this)
+			.then(longestPath => {
+				const
+					entryLocation = longestPath.fromLocation,
+					exitLocation = longestPath.toCell.location,
+					entryCell = this.getCell(entryLocation.column, entryLocation.row),
+					exitCell = this.getCell(exitLocation.column, exitLocation.row);
 
-	this[propertyNames.entryCell] = entryCell;
-	this[propertyNames.exitCell] = exitCell;
+				entryCell.removeRandomOuterWall();
+				exitCell.removeRandomOuterWall();
+
+				this[propertyNames.entryCell] = entryCell;
+				this[propertyNames.exitCell] = exitCell;
+
+				resolve();
+			});
+	});
 }
 
 /**
@@ -361,6 +371,7 @@ class Maze {
 		this[propertyNames.cells] = createMatrix.call(this, (x, y) => createMazeCell.call(this, x, y));
 
 		const
+			deferred = new Deferred(),
 			visitedCells = new Set(),
 			stack = [];
 
@@ -389,9 +400,14 @@ class Maze {
 			cell = nextCell;
 		}
 
-		if (!skipEntryExit) {
-			findEntryAndExit.call(this);
+		if (skipEntryExit) {
+			deferred.resolve();
+		} else {
+			findEntryAndExit.call(this)
+				.then(() => deferred.resolve());
 		}
+
+		return deferred.promise;
 	}
 
 	getSerializableMaze() {
@@ -402,6 +418,7 @@ class Maze {
 			result.push(row.map(cell => {
 				return {
 					id: cell.id,
+					activeWalls: cell.activeWalls,
 					location: cell.location,
 					numberOfNeighbors: cell.numberOfNeighbors,
 					outerWalls: cell.outerWalls,

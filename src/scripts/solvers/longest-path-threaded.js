@@ -8,6 +8,8 @@ import {
 	flatten
 } from '../utilities/utilities.js';
 
+import LongestPathFinderBase from './longest-path.base.js';
+
 /* == IMPORTS =============================================================== */
 
 /**
@@ -39,9 +41,7 @@ const
 	propertyNames = {
 		activeThreads: Symbol('activeThreads'),
 		deferred: Symbol('deferred'),
-		numberOfThreads: Symbol('numberOfThreads'),
-		potentialEntryCells: Symbol('potentialEntryCells'),
-		solution: Symbol('solution')
+		numberOfThreads: Symbol('numberOfThreads')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -67,8 +67,8 @@ function onWorkerMessage(event) {
 
 	// Check if the longest path for the cell is longer than the current longest
 	// path. If it is, take the new solution as the longest path in the maze.
-	if (event.data.path.length > this[propertyNames.solution].path.length) {
-		this[propertyNames.solution] = event.data;
+	if (event.data.path.length > this._solution.path.length) {
+		this._solution = event.data;
 	}
 
 	// Measure how long it took to determine the solution for the cell.
@@ -80,25 +80,20 @@ function onWorkerMessage(event) {
 
 	// Remove potential entry cells that were in the path and are no longer
 	// in the running for being the starting point of the longest path.
-	prunePotentialEntryCells.call(this, event.data.path);
-	// console.log(`Worker ${worker.index} has pruned ${prunedCells} cells`);
+	const pruneCount = this._prunePotentialEntryCells(this._solution.path);
 
+	console.log(`Solution found from ${event.data.fromLocation.column}_${event.data.fromLocation.row} to ${event.data.toCell.id} with length ${event.data.path.length}, ${pruneCount} entry cells pruned.`);
 	// Check if the set with potential entry cells is empty, in this case there
 	// is no more work for the worker to be done.
-	if (this[propertyNames.potentialEntryCells].size === 0) {
+	if (this._potentialEntryCells.size === 0) {
 		stopWebWorker.call(this, worker);
 
 		return;
 	}
 
-	// Get an iterator for the values in the set with potential entry cells and
-	// get the first value of the set.
+	// Get the next cell
 	const
-		cells = this[propertyNames.potentialEntryCells].values(),
-		startCell = cells.next().value;
-	// Remove the first element from the set, it no longer has to be processed
-	// by another thread.
-	this[propertyNames.potentialEntryCells].delete(startCell);
+		startCell = this._shiftPotentialEntryCell();
 	// Tell the worker to find the longest path for the cell. The maze data no
 	// longer has to be passed along, the worker already has this information.
 	worker.postMessage({
@@ -113,79 +108,6 @@ function onWorkerMessage(event) {
 /* ========================================================================== *\
 	PRIVATE METHODS
 \* ========================================================================== */
-
-/**
- * Clears all performance data
- *
- */
-function clearPerformanceData() {
-	performance.clearMarks();
-	performance.clearMeasures();
-}
-
-/**
- * Returns the cell in the maze that have a chance of being the starting point
- * of the longst path. A cell may be the starting point of the longest path when
- * - It is located on the outer edge of the maze;
- * - It doesn't have just a top and bottom wall;
- * - It doesn't have just a left and right wall.
- *
- * @param {Array} cells
- *
- * @returns {Array}
- */
-function getPotentialEntryCells(cells) {
-	const
-		flatCells = flatten(cells);
-
-	// Return the cells that are located on the outside of the maze and that are
-	// not a vertical or horizontal corridor. Cells with two walls opposite of
-	// each other are never the start or end point for a longest path.
-	return flatCells.filter(cell => {
-		return (
-			cell.outerWalls !== 0 &&
-			cell.activeWalls !== 5 &&
-			cell.activeWalls !== 10
-		)
-	});
-}
-
-/**
- *
- *
- * @param {Array} pathCells
- *
- * @returns {Number} The method returns the number of cells have been pruned
- *          the set of potential entry cells.
- *
- * @private
- * @memberof LongestPathFinder
- */
-function prunePotentialEntryCells(pathCells) {
-	let
-		counter = 0;
-
-	// Iterate over all the cells in the longest path.
-	for (let index = 0; index < pathCells.length; index++) {
-		const
-			location = pathCells[index].location,
-			cell = this.maze.cells[location.row][location.column];
-
-		// When the cell has an outer wall, exactly 2 neighbors, and is still in
-		// the set of cells to determine the longest path for it can be removed
-		// from the set.
-		if (
-			cell.outerWalls !== 0 &&
-			cell.numberOfNeighbors === 2 &&
-			this[propertyNames.potentialEntryCells].has(cell)
-		) {
-			this[propertyNames.potentialEntryCells].delete(cell);
-			counter++;
-		}
-	}
-
-	return counter;
-}
 
 /**
  *
@@ -256,7 +178,7 @@ function stopWebWorker(worker) {
 
 	// Resolve the promise that was returned by the solve method, fullfill the
 	// promise with the longest path in the maze that was discovered.
-	this[propertyNames.deferred].resolve(this[propertyNames.solution]);
+	this[propertyNames.deferred].resolve(this._solution);
 }
 
 
@@ -268,11 +190,13 @@ function stopWebWorker(worker) {
 	PUBLIC API
 \* ========================================================================== */
 
-class LongestPathFinder {
+class LongestPathFinder extends LongestPathFinderBase {
 	/* ====================================================================== *\
 		CONSTRUCTOR
 	\* ====================================================================== */
 	constructor() {
+		super();
+
 		this[propertyNames.activeThreads] = 0;
 		this[propertyNames.numberOfThreads] = defaultNumberOfThreads;
 	}
@@ -283,15 +207,6 @@ class LongestPathFinder {
 	/* ====================================================================== *\
 		INSTANCE PROPERTIES
 	\* ====================================================================== */
-
-	/* ---------------------------------- *\
-		discoveryDurations (read-only)
-	\* ---------------------------------- */
-	get discoveryDurations() {
-		return performance.getEntriesByName(performanceInfo.discovery.name);
-	}
-	/* -- discoveryDurations (read-only)  */
-
 
 	/* ---------------------------------- *\
 		numberOfThreads
@@ -308,15 +223,6 @@ class LongestPathFinder {
 	}
 	/* -- numberOfThreads --------------- */
 
-
-	/* ---------------------------------- *\
-		overallDuration (read-only)
-	\* ---------------------------------- */
-	get overallDuration() {
-		return performance.getEntriesByName(performanceInfo.overall.name);
-	}
-	/* -- overallDuration (read-only) --- */
-
 	/* == INSTANCE PROPERTIES =============================================== */
 
 
@@ -332,28 +238,22 @@ class LongestPathFinder {
 	 * @memberof LongestPathFinder
 	 */
 	solve(maze) {
+		super.solve(maze.getSerializableMaze());
+
 		// Initialize the deferred which will be used to signal when the longest
 		// path has been found.
 		this[propertyNames.deferred] = new Deferred();
-		// Initialize the solution property. It should contain an empty path so
-		// the first discovered path will be accepted as having the
-		// longest length.
-		this[propertyNames.solution] = {
-			path: []
-		};
-		this.maze = maze;
-
-		// Clear any previous performance data there is.
-		clearPerformanceData();
 
 		const
-			potentialEntryCells = getPotentialEntryCells(maze.cells);
+			potentialEntryCells = this._determinePotentialEntryCells();
 
 		// Create the set with potential entry cells, leave out the first cells
 		// in the array, as many as the number of workers we will launch. This
 		// way the first batch of cells for which the longest path is determined
 		// won't have to be deleted from the set.
-		this[propertyNames.potentialEntryCells] = new Set(potentialEntryCells.slice(this.numberOfTreads));
+		this._potentialEntryCells = new Set(potentialEntryCells.slice(this.numberOfTreads));
+
+		console.log('Initial number of entry cells ', this._potentialEntryCells.size);
 
 		// Start the workers.
 		startWebWorkers.call(this, maze.getSerializableMaze(), potentialEntryCells);

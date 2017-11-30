@@ -2,10 +2,15 @@
 	IMPORTS
 \* ========================================================================== */
 
+import Deferred from '../utilities/deferred.js';
+
 import {
+	defer,
 	flatten,
 	getRandomInt
 } from '../utilities/utilities.js';
+
+import LongestPathFinderBase from './longest-path.base.js';
 
 /* == IMPORTS =============================================================== */
 
@@ -13,6 +18,13 @@ import {
  * @typedef {Location}
  * @property {Number} column
  * @property {Number} row
+ */
+
+/**
+ * @typedef LongestPath
+ * @property {Location} fromLocation
+ * @property {Object} toCell
+ * @property {Array} path
  */
 
 /* ========================================================================== *\
@@ -34,8 +46,7 @@ const
 	},
 
 	propertyNames = {
-		mazeDimensions: Symbol('mazeDimension'),
-		outerCells: Symbol('outerCells')
+		deferred: Symbol('deferred')
 	};
 
 /* == PRIVATE VARIABLES ===================================================== */
@@ -46,109 +57,65 @@ const
 	PRIVATE METHODS
 \* ========================================================================== */
 
-/**
- *
- *
- */
-function clearPerformanceData() {
-	performance.clearMarks();
-	performance.clearMeasures();
-}
-
-/**
- *
- *
- * @param {Cell} {column, row}
- *
- * @returns {String}
- */
-function getKeyForCell({column, row}) {
-	return `${column}_${row}`;
-}
 
 /**
  *
  *
  * @param {Cell} cell
  *
+ * @returns {LongesPath}
  * @private
- * @memberof LongestPath
+ * @memberof LongestPathFinder
  */
 // eslint-disable-next-line complexity, require-jsdoc
-function getLongestPathForCell(startCell, mazeCells, optimized = false) {
+function getLongestPathForCell(startLocation) {
 	const
 		visitedCells = new Set(),
 		stack = [];
 
 	let
-		cell = startCell,
-		longestPath = {
-			location: null,
-			length: -Infinity
-		},
-		longestStack = [];
+		cell = this.mazeCells[startLocation.row][startLocation.column],
+		solution = this._emptySolution;
 
 	performance.mark(performanceInfo.discovery.start);
 	while (cell != null) {
-		visitedCells.add(getKeyForCell(cell));
+		visitedCells.add(cell.id);
 
 		const
-			nextCellLocation = getRandomUnvisitedNeighbor.call(this, cell, mazeCells, visitedCells);
+			nextCellLocation = getRandomUnvisitedNeighbor(cell, visitedCells);
 
 		if (nextCellLocation === null) {
-			if (stack.length > longestPath.length && cell.outerWalls !== 0) {
-				longestPath = {
-					cell,
-					location: cell.location,
-					length: stack.length
-				};
-				longestStack = stack.slice(0);
+			if (
+				(stack.length + 1) > solution.path.length &&
+				cell.outerWalls !== 0
+			) {
+				const
+					path = stack.slice(0);
+				path.push(cell);
+				solution.fromLocation = startLocation;
+				solution.toCell = cell;
+				solution.path = path;
 			}
 			cell = stack.pop();
 			continue;
 		}
 
 		const
-			nextCell = mazeCells[nextCellLocation.row][nextCellLocation.column];
+			nextCell = this.mazeCells[nextCellLocation.row][nextCellLocation.column];
 		stack.push(cell);
 		cell = nextCell;
-	}
-
-	// Iterate over all the cells in the longest path.
-	for (let index = 0; index < longestStack.length; index++) {
-		const
-			cell = longestStack[index];
-		// When the cell has an outer wall, exactly 2 neighbors, and is still in
-		// the set of cells to determine the longest path for it can be removed
-		// from the set.
-		if (
-			cell.outerWalls !== 0 &&
-			cell.numberOfNeighbors === 2 &&
-			this[propertyNames.outerCells].has(cell)
-		) {
-			this[propertyNames.outerCells].delete(cell);
-		}
 	}
 
 	performance.mark(performanceInfo.discovery.end);
 	performance.measure(performanceInfo.discovery.name, performanceInfo.discovery.start, performanceInfo.discovery.end);
 
-	return longestPath;
+	// Remove potential entry cells that were in the path and are no longer
+	// in the running for being the starting point of the longest path.
+	this._prunePotentialEntryCells(solution.path);
+
+	return solution;
 }
 
-/**
- *
- *
- * @param {Array} cells
- *
- * @returns {Array}
- */
-function getOuterCells(cells) {
-	const
-		flatCells = flatten(cells);
-
-	return flatCells.filter(cell => cell.outerWalls !== 0);
-}
 
 /**
  *
@@ -162,49 +129,59 @@ function getOuterCells(cells) {
  * @private
  * @memberof LongestPath
  */
-function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
+function getRandomUnvisitedNeighbor(cell, visitedCells) {
 	const
-		{ columns, rows } = this[propertyNames.mazeDimensions],
-		// Get a list of all potential neighbors for the provided cell. This may
-		// include locations that fall outside of the grid.
-		locations = cell.getNeighborsLocations(),
-		// Filter the locations to remove all locations which:
-		// - Fall outside of the grid;
-		// - Have already been visited.
-		validLocations = locations.filter(location => {
-			const
-				{column, row } = location;
+		validLocations = [];
 
-			return (
-				(column >= 0 && column < columns) &&
-				(row >= 0 && row < rows) &&
-				!visitedCells.has(getKeyForCell(location))
-			)
-		}),
-		// Now that we have an array with just valid locations for unvisited
-		// cells we need to take the last step, remove all the locations that
-		// have no path to the provided cell.
-		validCells = validLocations.filter(location => {
-			const
-				candidate = maze[location.row][location.column];
-
-			return cell.hasPathTo(candidate);
-		});
+	for (let index=0, ubound=cell.paths.length; index<ubound; index++) {
+		const
+			location = cell.paths[index],
+			{ column, row } = location;
+		if (!visitedCells.has(`${ column }_${ row }`)) {
+			validLocations.push(location)
+		}
+	}
 
 	// When there are no valid neighbors, return null. In case there is just a
 	// single valid neighbor, return it.
-	if (validCells.length === 0) {
+	if (validLocations.length === 0) {
 		return null;
-	} else if (validCells.length === 1) {
-		return validCells[0];
+	} else if (validLocations.length === 1) {
+		return validLocations[0];
 	}
 
 	const
 		// Determine a random index for the array of valid cells.
-		randomIndex = getRandomInt(0, validCells.length - 1);
+		randomIndex = getRandomInt(0, validLocations.length - 1);
 
 	// Return the location for the randomly determined index.
-	return validCells[randomIndex];
+	return validLocations[randomIndex];
+}
+
+/**
+ *
+ *
+ */
+function solveMaze() {
+	performance.mark(performanceInfo.overall.start);
+
+	while (this._potentialEntryCells.size > 0) {
+		const
+			startCell = this._shiftPotentialEntryCell(),
+			solution = getLongestPathForCell.call(this, startCell.location);
+
+		if (solution.path.length > this._solution.path.length) {
+			this._solution.fromLocation = solution.fromLocation;
+			this._solution.toCell = solution.toCell;
+			this._solution.path = solution.path.slice(0);
+		}
+
+	}
+
+	performance.mark(performanceInfo.overall.end);
+	performance.measure(performanceInfo.overall.name, performanceInfo.overall.start, performanceInfo.overall.end);
+
+	this[propertyNames.deferred].resolve(this._solution);
 }
 
 /* == PRIVATE METHODS ======================================================= */
@@ -215,31 +192,7 @@ function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 	PUBLIC API
 \* ========================================================================== */
 
-class LongestPathFinder {
-	/* ====================================================================== *\
-		INSTANCE PROPERTIES
-	\* ====================================================================== */
-
-	/* ---------------------------------- *\
-		discoveryDurations (read-only)
-	\* ---------------------------------- */
-	get discoveryDurations() {
-		return performance.getEntriesByName(performanceInfo.discovery.name);
-	}
-	/* -- discoveryDurations (read-only)  */
-
-
-	/* ---------------------------------- *\
-		overallDuration (read-only)
-	\* ---------------------------------- */
-	get overallDuration() {
-		return performance.getEntriesByName(performanceInfo.overall.name);
-	}
-	/* -- overallDuration (read-only) --- */
-
-	/* == INSTANCE PROPERTIES =============================================== */
-
-
+class LongestPathFinder extends LongestPathFinderBase {
 
 	/* ====================================================================== *\
 		PUBLIC METHODS
@@ -252,49 +205,21 @@ class LongestPathFinder {
 	 * @memberof LongestPathFinder
 	 */
 	solve(maze) {
-		this[propertyNames.mazeDimensions] = {
-			columns: maze.cells[0].length,
-			rows: maze.cells.length
-		};
+		super.solve(maze.getSerializableMaze());
 
-		clearPerformanceData();
+		// Initialize the deferred which will be used to signal when the longest
+		// path has been found.
+		this[propertyNames.deferred] = new Deferred();
 
-		this[propertyNames.outerCells] = new Set(getOuterCells(maze.cells));
+		this._potentialEntryCells = new Set(this._determinePotentialEntryCells());
 
-		const
-			outerCells = this[propertyNames.outerCells];
+		console.log('Initial number of entry cells ', this._potentialEntryCells.size);
 
-		let
-			longestLongestPath = {
-				fromCell: null,
-				toCell: null,
-				length: -Infinity
-			};
+		defer(() => {
+			solveMaze.call(this);
+		});
 
-		performance.mark(performanceInfo.overall.start);
-
-		while (outerCells.size > 0) {
-			const
-				cells = outerCells.values(),
-				firstLocation = cells.next().value,
-				firstCell = maze.cells[firstLocation.row][firstLocation.column],
-				longestPath = getLongestPathForCell.call(this, firstCell, maze.cells);
-
-			if (longestPath.length > longestLongestPath.length) {
-				longestLongestPath = {
-					fromCell: firstCell.location,
-					toCell: longestPath.location,
-					length: longestPath.length
-				};
-			}
-
-			outerCells.delete(firstLocation);
-		}
-
-		performance.mark(performanceInfo.overall.end);
-		performance.measure(performanceInfo.overall.name, performanceInfo.overall.start, performanceInfo.overall.end);
-
-		return longestLongestPath;
+		return this[propertyNames.deferred].promise;
 	}
 
 	/* == PUBLIC METHODS ==================================================== */

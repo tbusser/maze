@@ -3,6 +3,21 @@
 \* ========================================================================== */
 
 /**
+ *
+ * @param {Function} method
+ * @param {*} args
+ */
+function defer(method, ...args) {
+	if (!isMethod(method)) {
+		return -1;
+	}
+
+	return setTimeout(function() {
+		method.apply(undefined, args);
+	}, 1);
+}
+
+/**
  * Reduces a multidimensional array to a single dimensional array.
  *
  * @param {Array} array The multidimensional array to reduce to a single
@@ -28,6 +43,10 @@ function flatten(array) {
  */
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function isMethod(method) {
+	return (typeof method === 'function');
 }
 
 /**
@@ -79,6 +98,7 @@ function isNilOrEmpty(value) {
 \* ========================================================================== */
 
 export {
+	defer,
 	flatten,
 	getRandomInt,
 	isNil,
