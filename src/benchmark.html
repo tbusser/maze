@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Maze generator</title>
+	<link rel="stylesheet" href="/css/main.css">
+</head>
+
+<body class="ml+ mt+">
+	<article>
+		<fieldset>
+			<legend>Maze size</legend>
+			<label for="maze-columns">
+				number of columns
+				<input type="number" name="maze-columns" id="" min="3" max="500" value="10">
+			</label>
+			<label for="maze-rows">
+				number of rows
+				<input type="number" name="" id="maze-rows" min="3" max="500" value="10">
+			</label>
+		</fieldset>
+
+		<fieldset class="mt+">
+			<legend>Solvers</legend>
+			<label for="solver-sync">
+				<input type="checkbox" name="" id="solver-sync" value="sync" checked="checked">
+				synchronous
+			</label>
+			<label for="solver-threaded">
+				<input type="checkbox" name="" id="solver-threaded" value="threaded" checked="checked">
+				threaded
+			</label>
+		</fieldset>
+
+		<button class="js-replay-benchmark" type="button">Replay</button>
+	</article>
+	<script type="module" src="scripts/benchmark.js"></script>
+</body>
+
+</html>

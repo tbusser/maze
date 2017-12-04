@@ -21,6 +21,9 @@ import LongestPathFinderBase from './longest-path.base.js';
 const
 	defaultNumberOfThreads = 4,
 
+	decoder = new TextDecoder('utf-8'),
+	encoder = new TextEncoder('utf-8'),
+
 	performanceInfo = {
 		discovery: {
 			end: 'lp-discovery-end',
@@ -59,12 +62,13 @@ const
  */
 function onWorkerMessage(event) {
 	const
-		worker = event.target;
+		worker = event.target,
+		data = decode(event.data);
 
 	// Check if the longest path for the cell is longer than the current longest
 	// path. If it is, take the new solution as the longest path in the maze.
-	if (event.data.path.length > this._solution.path.length) {
-		this._solution = event.data;
+	if (data.path.length > this._solution.path.length) {
+		this._solution = data;
 	}
 
 	// Measure how long it took to determine the solution for the cell.
@@ -84,7 +88,7 @@ function onWorkerMessage(event) {
 
 	// Remove potential entry cells that were in the path and are no longer
 	// in the running for being the starting point of the longest path.
-	this._prunePotentialEntryCells(event.data.path);
+	this._prunePotentialEntryCells(data.path);
 
 	// Get the next cell
 	const
@@ -92,10 +96,13 @@ function onWorkerMessage(event) {
 	// Tell the worker to find the longest path for the cell. The maze data no
 	// longer has to be passed along, the worker already has this information.
 	performance.mark(startMarker);
-	worker.postMessage({
-		startCell,
-		maze: undefined
-	});
+	const
+		arrayBuffer = encode({
+			startCell,
+			maze: undefined
+		 });
+	// now transfer array buffer
+	worker.postMessage(arrayBuffer, [arrayBuffer])
 }
 
 /* == EVENT HANDLING ======================================================== */
@@ -105,6 +112,32 @@ function onWorkerMessage(event) {
 /* ========================================================================== *\
 	PRIVATE METHODS
 \* ========================================================================== */
+
+/**
+ *
+ *
+ * @param {any} data
+ */
+function decode(data) {
+	const
+		view = new DataView(data, 0, data.byteLength),
+		string = decoder.decode(view);
+
+	return JSON.parse(string);
+}
+
+/**
+ *
+ *
+ * @param {any} data
+ */
+function encode(data) {
+	const
+		string = JSON.stringify(data),
+		uint8_array = encoder.encode(string);
+
+	return uint8_array.buffer;
+}
 
 /**
  *
@@ -134,7 +167,7 @@ function launchWebworkers(seedCells) {
 	for (let index = 0; index < this.numberOfThreads; index++) {
 		// Create a new worker instance.
 		let
-			worker = new Worker('scripts/solvers/worker.js'),
+			worker = new Worker('scripts/solvers/worker-ab.js'),
 			startCell = seedCells.pop();
 
 		// Add an event listener so the worker can communicate back.
@@ -149,10 +182,14 @@ function launchWebworkers(seedCells) {
 		// Set a performance marker for the worker.
 		performance.mark(performanceInfo.discovery.start + index);
 		// Tell the worker for which cell it should find the longest path.
-		worker.postMessage({
-			startCell,
-			maze: this.mazeCells
-		});
+		const
+			arrayBuffer = encode({
+				startCell,
+				maze: this.mazeCells
+			});
+
+		// now transfer array buffer
+		worker.postMessage(arrayBuffer, [arrayBuffer])
 	}
 }
 

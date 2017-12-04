@@ -6,7 +6,6 @@ import Deferred from '../utilities/deferred.js';
 
 import {
 	defer,
-	flatten,
 	getRandomInt
 } from '../utilities/utilities.js';
 
@@ -165,17 +164,16 @@ function getRandomUnvisitedNeighbor(cell, visitedCells) {
 function solveMaze() {
 	performance.mark(performanceInfo.overall.start);
 
-	while (this._potentialEntryCells.size > 0) {
+	while (this._potentialEntryCellsIds.size > 0) {
 		const
-			startCell = this._shiftPotentialEntryCell(),
-			solution = getLongestPathForCell.call(this, startCell.location);
+			startLocation = this._shiftPotentialEntryCell(),
+			solution = getLongestPathForCell.call(this, startLocation);
 
 		if (solution.path.length > this._solution.path.length) {
 			this._solution.fromLocation = solution.fromLocation;
 			this._solution.toCell = solution.toCell;
 			this._solution.path = solution.path.slice(0);
 		}
-
 	}
 
 	performance.mark(performanceInfo.overall.end);
@@ -193,7 +191,6 @@ function solveMaze() {
 \* ========================================================================== */
 
 class LongestPathFinder extends LongestPathFinderBase {
-
 	/* ====================================================================== *\
 		PUBLIC METHODS
 	\* ====================================================================== */
@@ -211,9 +208,7 @@ class LongestPathFinder extends LongestPathFinderBase {
 		// path has been found.
 		this[propertyNames.deferred] = new Deferred();
 
-		this._potentialEntryCells = new Set(this._determinePotentialEntryCells());
-
-		console.log('Initial number of entry cells ', this._potentialEntryCells.size);
+		this._potentialEntryCellsIds = new Set(this._determinePotentialEntryCells().map(cell => cell.id));
 
 		defer(() => {
 			solveMaze.call(this);

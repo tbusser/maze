@@ -2,6 +2,10 @@
 	PRIVATE VARIABLES
 \* ========================================================================== */
 
+const
+	decoder = new TextDecoder('utf-8'),
+	encoder = new TextEncoder('utf-8');
+
 let
 	maze = null;
 
@@ -19,13 +23,14 @@ let
  * @param {any} event
  */
 function onMessageReceived(event) {
+	var object = decode(event.data);
 	const
-		startCell = event.data.startCell,
+		startCell = object.startCell,
 		visitedCells = new Set(),
 		stack = [];
 
-	if (event.data.maze != null) {
-		maze = event.data.maze;
+	if (object.maze != null) {
+		maze = object.maze;
 	}
 
 	let
@@ -38,7 +43,7 @@ function onMessageReceived(event) {
 		visitedCells.add(cell.id);
 
 		const
-			nextCellLocation = getRandomUnvisitedNeighbor(cell, visitedCells);
+			nextCellLocation = getRandomUnvisitedNeighbor(cell, maze, visitedCells);
 
 		if (nextCellLocation === null) {
 			if (
@@ -64,8 +69,10 @@ function onMessageReceived(event) {
 	}
 
 	result.fromLocation = startCell;
-
-	postMessage(result);
+	const
+		arrayBuffer = encode(result);
+	// now transfer array buffer
+	postMessage(arrayBuffer, [arrayBuffer]);
 }
 
 /* == EVENT HANDLING ======================================================== */
@@ -79,11 +86,37 @@ function onMessageReceived(event) {
 /**
  *
  *
+ * @param {any} data
+ */
+function decode(data) {
+	const
+		view = new DataView(data, 0, data.byteLength),
+		string = decoder.decode(view);
+
+	return JSON.parse(string);
+}
+
+/**
+ *
+ *
+ * @param {any} data
+ */
+function encode(data) {
+	const
+		string = JSON.stringify(data),
+		uint8_array = encoder.encode(string);
+
+	return uint8_array.buffer;
+}
+
+/**
+ *
+ *
  * @param {any} cell
  * @param {any} maze
  * @param {any} visitedCells
  */
-function getRandomUnvisitedNeighbor(cell, visitedCells) {
+function getRandomUnvisitedNeighbor(cell, maze, visitedCells) {
 	const
 		// Filter the locations to remove all locations which:
 		// - Fall outside of the grid;
@@ -99,9 +132,16 @@ function getRandomUnvisitedNeighbor(cell, visitedCells) {
 	// single valid neighbor, return it.
 	if (validLocations.length === 0) {
 		return null;
-	} else {
-		return validLocations[validLocations.length - 1];
+	} else if (validLocations.length === 1) {
+		return validLocations[0];
 	}
+
+	const
+		// Determine a random index for the array of valid cells.
+		randomIndex = Math.floor(Math.random() * (validLocations.length));
+
+	// Return the location for the randomly determined index.
+	return validLocations[randomIndex];
 }
 
 /* == PRIVATE METHODS ======================================================= */

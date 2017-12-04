@@ -39,6 +39,29 @@ const
 
 
 /* ========================================================================== *\
+	PRIVATE METHODS
+\* ========================================================================== */
+
+/**
+ *
+ *
+ * @param {any} cellId
+ */
+function idToLocation(cellId) {
+	const
+		parts = cellId.split('_');
+
+	return {
+		column: parts[0],
+		row: parts[1]
+	};
+}
+
+/* == PRIVATE METHODS ======================================================= */
+
+
+
+/* ========================================================================== *\
 	PUBLIC API
 \* ========================================================================== */
 
@@ -73,15 +96,15 @@ class LongestPathFinder {
 
 
 	/* ---------------------------------- *\
-		_potentialEntryCells
+		_potentialEntryCellsIds
 	\* ---------------------------------- */
-	get _potentialEntryCells() {
+	get _potentialEntryCellsIds() {
 		return this[propertyNames.potentialEntryCells];
 	}
-	set _potentialEntryCells(cells) {
+	set _potentialEntryCellsIds(cells) {
 		this[propertyNames.potentialEntryCells] = cells;
 	}
-	/* -- _potentialEntryCells ---------- */
+	/* -- _potentialEntryCellsIds ---------- */
 
 
 	/* ---------------------------------- *\
@@ -183,15 +206,15 @@ class LongestPathFinder {
 	_shiftPotentialEntryCell() {
 		// Get the first cell in the set.
 		const
-			cells = this._potentialEntryCells.values(),
-			startCell = cells.next().value;
+			cells = [...this._potentialEntryCellsIds],
+			startCell = cells[0];
 
 		// Remove the first element from the set, it no longer has to be processed
 		// by another thread.
-		this._potentialEntryCells.delete(startCell);
+		this._potentialEntryCellsIds.delete(startCell);
 
 		// Return the cell.
-		return startCell;
+		return idToLocation(startCell);
 	}
 
 	/**
@@ -207,39 +230,27 @@ class LongestPathFinder {
 	 */
 	_prunePotentialEntryCells(pathCells) {
 		let
-			counter = 0,
-			initSize = this._potentialEntryCells.size;
+			pruneCount = 0;
 
 		// Iterate over all the cells in the longest path.
-		for (let index = 0; index < pathCells.length; index++) {
+		for (let index = pathCells.length - 1; index >= 0; index--) {
 			const
-				location = pathCells[index].location,
-				cell = this.mazeCells[location.row][location.column];
+				pathCell = pathCells[index];
 
 			// When the cell has an outer wall, exactly 2 neighbors, and is still in
 			// the set of cells to determine the longest path for it can be removed
 			// from the set.
 			if (
-				cell.outerWalls !== 0 &&
-				cell.numberOfNeighbors === 2 &&
-				this._potentialEntryCells.has(cell)
+				pathCell.outerWalls !== 0 &&
+				pathCell.numberOfNeighbors === 2 &&
+				this._potentialEntryCellsIds.has(pathCell.id)
 			) {
-				this._potentialEntryCells.delete(cell);
-				counter++;
+				this._potentialEntryCellsIds.delete(pathCell.id);
+				pruneCount++;
 			}
 		}
 
-		// if (counter > 0) {
-		// 	console.log(`Pruning for cell ${pathCells[0].id} has removed ${counter} entry cells`);
-		// }
-
-		// if (
-		// 	this._potentialEntryCells.size !== initSize
-		// ) {
-		// 	console.log(`Potential start cells pruned from ${initSize} to ${this._potentialEntryCells.size}`);
-		// }
-
-		return counter;
+		return pruneCount;
 	}
 
 	/* == PROTECTED METHODS ================================================= */
