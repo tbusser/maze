@@ -2,7 +2,10 @@ module.exports = function(gulp, config, plugins) {
 	'use strict';
 
 	gulp.task('clean', function() {
-		if (config.environment === 'src') {
+		if (
+			config.environment === 'src' ||
+			config.environment === 'dev'
+		) {
 			return;
 		}
 

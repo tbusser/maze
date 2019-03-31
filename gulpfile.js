@@ -49,16 +49,12 @@ require('./gulp/static-assets')(gulp, config, plugins);
 /* ========================================================================== *\
 	UTILITY TASKS
 \* ========================================================================== */
-gulp.task('set:deploy', function() {
-	'use strict';
-
+gulp.task('set:deploy', function setDeploy() {
 	config.deploy = true;
 	config.environment = 'dist';
 });
 
-gulp.task('webserver', function(taskReady) {
-	'use strict';
-
+gulp.task('webserver', function webserver(taskReady) {
 	gulp.src(config[config.environment].html)
 		.pipe(plugins.serverLivereload({
 			directoryListing: false,
@@ -68,9 +64,7 @@ gulp.task('webserver', function(taskReady) {
 });
 /* == UTILITY TASKS ========================================================= */
 
-gulp.task('build', function(taskReady) {
-	'use strict';
-
+gulp.task('build', function build(taskReady) {
 	runSequence(
 		'clean',
 		[
@@ -83,9 +77,7 @@ gulp.task('build', function(taskReady) {
 	);
 });
 
-gulp.task('deploy', function(taskReady) {
-	'use strict';
-
+gulp.task('deploy', function deploy(taskReady) {
 	runSequence(
 		'set:deploy',
 		'build',
@@ -93,9 +85,7 @@ gulp.task('deploy', function(taskReady) {
 	);
 });
 
-gulp.task('develop', function(taskReady) {
-	'use strict';
-
+gulp.task('develop', function develop(taskReady) {
 	runSequence(
 		'build',
 		[

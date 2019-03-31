@@ -14,7 +14,6 @@ module.exports = function(gulp, config, plugins) {
 			}))
 			.pipe(plugins.if(config.deploy, plugins.stripComments()))
 			.pipe(plugins.if(config.deploy, plugins.save('before-sitemap')))
-			.pipe(plugins.if(config.deploy, plugins.sitemap(config.sitemap)))
 			.pipe(plugins.if(config.deploy, gulp.dest(paths.html)))
 			.pipe(plugins.if(config.deploy, plugins.save.restore('before-sitemap')))
 			.pipe(gulp.dest(paths.html));
